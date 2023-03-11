@@ -10,6 +10,7 @@ $ watchhttp -t 5s -p 9000 --path /home -json -- curl ...
 $ watchhttp -t 5s -p 9000 --path /home -json -- /bin/sh -c 'curl ... | jq'
 $ watchhttp -t 5s -p 9000 --path /home -- kubectl get pod mypod
 $ watchhttp -t 5s -p 9000 --path /home -- graph
+$ watchhttp kubectl get pod mypod
 ```
 
 ### TODO
