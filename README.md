@@ -12,6 +12,7 @@ $ watchhttp -t 5s -p 9000 --path /home -- kubectl get pod mypod
 $ watchhttp -t 5s -p 9000 --path /home -- graph
 $ watchhttp kubectl get pod mypod
 ```
+print one line what it does when starts to STDERR
 
 ### TODO
 
