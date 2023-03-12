@@ -2,19 +2,11 @@
 
 > Run command periodically and expose latest STDOUT as HTTP endpoint
 
-```bash
-$ watchhttp -t 5s -p 9000 -- graph
-$ watchhttp -json -- kubectl get pod mypod -o=json
-$ watchhttp kubectl get pod mypod
-```
+### Live visualization with difference
 
-### TODO
-
-Rich Difference embedded?
-
-HTML + reload
+TODO
+HTML + refetch in loop
 https://www.w3schools.com/jsref/met_loc_reload.asp
-
 
 ### Fetch and transform external resource with `curl` and `jq`
 
