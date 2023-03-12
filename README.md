@@ -157,3 +157,16 @@ It would take some effort, but effectivelly this is emulating terminal rendering
 Issue of converting terminal escaped ASCII to HTML output colors.
 As next step, you would want to also pass to STDIN through browser too.
 Overall, this is separate problem of exposing terminal throuhg browser.
+
+### Appendix D: Interesting free real time data sources
+
+#### Stock Sentiment in `/r/Wallstreetbets`
+* https://tradestie.com/apps/reddit/api/
+* `curl -XGET 'https://tradestie.com/api/v1/apps/reddit'`
+* no auth
+* no limit
+
+#### Weather forecast
+* `curl https://api.open-meteo.com/v1/forecast?latitude=52.52&longitude=13.41&current_weather=true&hourly=temperature_2m,relativehumidity_2m,windspeed_10m`
+* no auth
+* no limit
