@@ -8,6 +8,58 @@ $ watchhttp -json -- kubectl get pod mypod -o=json
 $ watchhttp kubectl get pod mypod
 ```
 
+### TODO
+
+Rich Difference embedded?
+
+HTML + reload
+https://www.w3schools.com/jsref/met_loc_reload.asp
+
+
+### Fetch and transform external resource with `curl` and `jq`
+
+```bash
+wathchttp -t 5s -json -- /bin/sh -c 'curl "https://api.open-meteo.com/v1/forecast?latitude=52.52&longitude=13.41&current_weather=true&hourly=temperature_2m,relativehumidity_2m,windspeed_10m" | jq "del(.hourly)"'
+```
+
+```bash
+$ curl localhost:9000/
+{
+  "latitude": 52.52,
+  "longitude": 13.419998,
+  "generationtime_ms": 0.635981559753418,
+  "utc_offset_seconds": 0,
+  "timezone": "GMT",
+  "timezone_abbreviation": "GMT",
+  "elevation": 38,
+  "current_weather": {
+    "temperature": 1.3,
+    "windspeed": 8.4,
+    "winddirection": 220,
+    "weathercode": 3,
+    "time": "2023-03-12T09:00"
+  },
+  "hourly_units": {
+    "time": "iso8601",
+    "temperature_2m": "°C",
+    "relativehumidity_2m": "%",
+    "windspeed_10m": "km/h"
+  }
+}
+```
+
+### Fetch external resource with `curl`
+
+```bash
+wathchttp -t 5s -json -- curl "https://api.open-meteo.com/v1/forecast?latitude=52.52&longitude=13.41&current_weather=true&hourly=temperature_2m,relativehumidity_2m,windspeed_10m"
+```
+
+```bash
+$ curl -localhost:9000/                                                              
+{"latitude":52.52,"longitude":13.419998,"generationtime_ms":0.598907470703125,"utc_offset_seconds":0,"timezone":"GMT","timezone_abbr
+eviation":"GMT","elevation":38.0,"current_weather":{"temperature":1.3,"windspeed":8.4,...
+```
+
 ### Watch file `tail` or `cat`
 
 ```bash
@@ -28,7 +80,7 @@ Mar 12 17:33:47 Nikolays-MacBook-Pro AMPDevicesAgent[67221]: Entered:_AMMuxedVer
 Mar 12 17:44:54 Nikolays-MacBook-Pro syslogd[532]: ASL Sender Statistics
 ```
 
-### Expose system statistic`vmstat`
+### Expose system statistic with `vmstat`
 
 ```bash
 wathchttp vmstat
@@ -61,63 +113,14 @@ Swapins:                                 435185.
 Swapouts:                                477406.
 ```
 
-### Long polling external resource `curl`
-
-```bash
-wathchttp -t 5s -json -- curl "https://api.open-meteo.com/v1/forecast?latitude=52.52&longitude=13.41&current_weather=true&hourly=temperature_2m,relativehumidity_2m,windspeed_10m"
-```
-
-```bash
-$ curl -localhost:9000/                                                              
-{"latitude":52.52,"longitude":13.419998,"generationtime_ms":0.598907470703125,"utc_offset_seconds":0,"timezone":"GMT","timezone_abbr
-eviation":"GMT","elevation":38.0,"current_weather":{"temperature":1.3,"windspeed":8.4,...
-```
-
-### Fetch and transform external resource `curl` + `jq`
-
-```bash
-wathchttp -t 5s -json -- /bin/sh -c 'curl "https://api.open-meteo.com/v1/forecast?latitude=52.52&longitude=13.41&current_weather=true&hourly=temperature_2m,relativehumidity_2m,windspeed_10m" | jq "del(.hourly)"'
-```
-
-```bash
-$ curl localhost:9000/
-{
-  "latitude": 52.52,
-  "longitude": 13.419998,
-  "generationtime_ms": 0.635981559753418,
-  "utc_offset_seconds": 0,
-  "timezone": "GMT",
-  "timezone_abbreviation": "GMT",
-  "elevation": 38,
-  "current_weather": {
-    "temperature": 1.3,
-    "windspeed": 8.4,
-    "winddirection": 220,
-    "weathercode": 3,
-    "time": "2023-03-12T09:00"
-  },
-  "hourly_units": {
-    "time": "iso8601",
-    "temperature_2m": "°C",
-    "relativehumidity_2m": "%",
-    "windspeed_10m": "km/h"
-  }
-}
-```
-
-### TODO
-
-Rich Difference embedded?
-
-HTML + reload
-https://www.w3schools.com/jsref/met_loc_reload.asp
+---
 
 ### Appendix A: Existing Tools
 
-- as of 2023-03-12, [awesome-go](http://github.com/avelino/awesome-go) does not mention tools that can do this
+- as of 2023-03-12, [awesome-go](http://github.com/avelino/awesome-go) does not mention any tools that can do this
 - `netcat` can not do this
 
-### Appendix B: Alternative: File Server + Bash
+### Appendix B: Alternative with file server + bash
 
 Similar effect can be achieved with file server and bash, albeit headers would not be set.
 
