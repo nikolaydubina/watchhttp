@@ -18,7 +18,7 @@ import (
 )
 
 const doc string = `
-Execute command on timeout and serve latest STDOUT at HTTP endpoint.
+Run command periodically and expose latest STDOUT as HTTP endpoint
 
 Examples:
 $ watchhttp -t 1s -p 9000 -- ls -la

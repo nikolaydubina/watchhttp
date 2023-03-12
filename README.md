@@ -1,6 +1,6 @@
 # watchhttp
 
-Execute command on timeout and serve latest STDOUT at HTTP endpoint
+> Run command periodically and expose latest STDOUT as HTTP endpoint
 
 ```bash
 $ watchhttp -t 5s -p 9000 -- graph
@@ -112,12 +112,12 @@ Rich Difference embedded?
 HTML + reload
 https://www.w3schools.com/jsref/met_loc_reload.asp
 
-### Existing Tools
+### Appendix A: Existing Tools
 
 - as of 2023-03-12, [awesome-go](http://github.com/avelino/awesome-go) does not mention tools that can do this
 - `netcat` can not do this
 
-### Alternative: File Server + Bash
+### Appendix B: Alternative: File Server + Bash
 
 Similar effect can be achieved with file server and bash, albeit headers would not be set.
 
@@ -132,7 +132,7 @@ func main() { http.ListenAndServe(":9000", http.FileServer(http.Dir("."))) }
 $ while sleep 5; do <something> > <file> ; done
 ```
 
-### Paths Not Taken
+### Appendix C: Paths Not Taken
 
 > Expose STDIN as HTTP endpoint
 
