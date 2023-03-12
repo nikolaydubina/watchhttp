@@ -26,19 +26,12 @@ $ watchhttp vmstat
 $ watchhttp tail /var/log/system.log
 $ watchhttp -json -- cat myfile.json
 $ watchhttp -p 9000 -json -- kubectl get pod mypod -o=json
-$ watchhttp -p 9000 -- kubectl get pod mypod
+$ watchhttp -p 9000 -- kubectl get pod mypod -o=yaml
 $ watchhttp curl ...
 $ watchhttp -json -- /bin/sh -c 'curl ... | jq'
-$ watchhttp -t 5s -p 9000 -- graph
 
 Command options:
 `
-
-var (
-	port            int           = 9000
-	interval        time.Duration = time.Second
-	contentTypeJSON bool          = false
-)
 
 func main() {
 	flag.Usage = func() {
@@ -47,6 +40,12 @@ func main() {
 	}
 
 	cmdargs, hasFlags := args.GetCommandFromArgs(os.Args[1:])
+
+	var (
+		port            int           = 9000
+		interval        time.Duration = time.Second
+		contentTypeJSON bool          = false
+	)
 
 	if hasFlags {
 		flag.IntVar(&port, "p", port, "port")
