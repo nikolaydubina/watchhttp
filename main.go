@@ -68,9 +68,7 @@ func main() {
 	}
 	go runner.Run()
 
-	runnerHandler := ForwardHandler{
-		Provider: &runner,
-	}
+	runnerHandler := ForwardHandler{Provider: &runner}
 	if contentTypeJSON {
 		runnerHandler.ContentType = "application/json"
 	}
@@ -83,7 +81,7 @@ func main() {
 type ForwardHandler struct {
 	ContentType string
 	Provider    interface {
-		WritePayload(writer io.Writer) (int64, error)
+		WriteBody(w io.Writer) (int64, error)
 	}
 }
 
@@ -91,11 +89,8 @@ func (s ForwardHandler) handleRequest(w http.ResponseWriter, req *http.Request) 
 	if s.ContentType != "" {
 		w.Header().Set("Content-Type", s.ContentType)
 	}
-	if _, err := s.Provider.WritePayload(w); err != nil {
-		w.WriteHeader(500)
-		w.Write([]byte(err.Error()))
-		log.Printf("error: %s", err)
-		return
+	if _, err := s.Provider.WriteBody(w); err != nil {
+		log.Fatal(err)
 	}
 }
 
@@ -107,16 +102,14 @@ type CmdRunner struct {
 	mtx        *sync.RWMutex
 }
 
-func (s *CmdRunner) WritePayload(writer io.Writer) (bytesWritten int64, err error) {
+func (s *CmdRunner) WriteBody(writer io.Writer) (written int64, err error) {
 	s.mtx.RLock()
 	defer s.mtx.RUnlock()
 	return io.Copy(writer, bytes.NewReader(s.lastStdOut.Bytes()))
 }
 
 func (s *CmdRunner) Run() {
-	for {
-		<-s.ticker.C
-
+	for range s.ticker.C {
 		cmd := exec.Command(s.cmd[0], s.cmd[1:]...)
 
 		stdout, err := cmd.StdoutPipe()
