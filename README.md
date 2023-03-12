@@ -6,12 +6,6 @@
 go install github.com/nikolaydubina/watchhttp@latest
 ```
 
-### Live visualization with difference
-
-TODO
-HTML + refetch in loop
-https://www.w3schools.com/jsref/met_loc_reload.asp
-
 ### Fetch and transform periodically with `curl` and `jq`
 
 ```bash
