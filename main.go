@@ -85,7 +85,7 @@ type ForwardHandler struct {
 	ContentType string
 	Interval    time.Duration
 	Provider    interface {
-		WriteBody(w io.Writer) (int64, error)
+		WriteTo(w io.Writer) (int64, error)
 	}
 }
 
@@ -93,8 +93,8 @@ func (s ForwardHandler) handleRequest(w http.ResponseWriter, req *http.Request) 
 	if s.ContentType != "" {
 		w.Header().Set("Content-Type", s.ContentType)
 	}
-	w.Header().Set("Refresh", fmt.Sprintf("%.0f", (s.Interval.Seconds())))
-	if _, err := s.Provider.WriteBody(w); err != nil {
+	w.Header().Set("Refresh", fmt.Sprintf("%.0f", s.Interval.Seconds()))
+	if _, err := s.Provider.WriteTo(w); err != nil {
 		log.Fatal(err)
 	}
 }
@@ -107,10 +107,10 @@ type CmdRunner struct {
 	mtx        *sync.RWMutex
 }
 
-func (s *CmdRunner) WriteBody(writer io.Writer) (written int64, err error) {
+func (s *CmdRunner) WriteTo(w io.Writer) (written int64, err error) {
 	s.mtx.RLock()
 	defer s.mtx.RUnlock()
-	return io.Copy(writer, bytes.NewReader(s.lastStdOut.Bytes()))
+	return io.Copy(w, bytes.NewReader(s.lastStdOut.Bytes()))
 }
 
 func (s *CmdRunner) Run() {
