@@ -2,6 +2,10 @@
 
 > Run command periodically and expose latest STDOUT as HTTP endpoint
 
+```bash
+go install github.com/nikolaydubina/watchhttp@latest
+```
+
 ### Live visualization with difference
 
 TODO
