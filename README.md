@@ -1,5 +1,7 @@
 # 🌺 watchhttp
 
+[![Go Report Card](https://goreportcard.com/badge/github.com/nikolaydubina/watchhttp)](https://goreportcard.com/report/github.com/nikolaydubina/watchhttp)
+
 > Run command periodically and expose latest STDOUT as HTTP endpoint
 
 ```bash
