@@ -12,7 +12,7 @@ TODO
 HTML + refetch in loop
 https://www.w3schools.com/jsref/met_loc_reload.asp
 
-### Fetch and transform external resource with `curl` and `jq`
+### Fetch and transform periodically with `curl` and `jq`
 
 ```bash
 watchhttp -t 5s -json -- /bin/sh -c 'curl "https://api.open-meteo.com/v1/forecast?latitude=52.52&longitude=13.41&current_weather=true&hourly=temperature_2m,relativehumidity_2m,windspeed_10m" | jq "del(.hourly)"'
@@ -44,7 +44,11 @@ $ curl localhost:9000/
 }
 ```
 
-### Create live graph of Kubernetes resources with `kubectl`, `jsonl-graph`, and `graphviz`
+### Live graph of Kubernetes resources with `kubectl` and `graphviz`
+
+```bash
+go install github.com/nikolaydubina/jsonl-graph@latest
+```
 
 ```bash
 watchhttp -t 3s -p 9000 -- /bin/sh -c "kubectl get pods -o json | jq '.items[] | {to: (.kind + \":\" + .metadata.name), from: (.metadata.ownerReferences[].kind + \":\" + .metadata.ownerReferences[].name)}' | jsonl-graph | dot -Tsvg""
@@ -52,7 +56,7 @@ watchhttp -t 3s -p 9000 -- /bin/sh -c "kubectl get pods -o json | jq '.items[] |
 
 ![](./img/example-k8s-graph.png)
 
-### Get live status of Kubernetes resource with `kubectl`
+### Live status of Kubernetes resource with `kubectl`
 
 ```bash
 watchhttp -t 3s -p 9000 -- kubectl describe deployment hello-minikube
@@ -60,27 +64,7 @@ watchhttp -t 3s -p 9000 -- kubectl describe deployment hello-minikube
 
 ![](./img/example-k8s-describe-static.png)
 
-### Watch file `tail` or `cat`
-
-```bash
-watchhttp tail /var/log/system.log
-```
-
-```bash
-$ curl localhost:9000/            
-Mar 12 16:16:07 Nikolays-MacBook-Pro syslogd[532]: ASL Sender Statistics
-Mar 12 16:32:06 Nikolays-MacBook-Pro syslogd[532]: ASL Sender Statistics
-Mar 12 16:48:15 Nikolays-MacBook-Pro syslogd[532]: ASL Sender Statistics
-Mar 12 17:04:22 Nikolays-MacBook-Pro syslogd[532]: ASL Sender Statistics
-Mar 12 17:22:24 Nikolays-MacBook-Pro syslogd[532]: ASL Sender Statistics
-Mar 12 17:33:45 Nikolays-MacBook-Pro MobileDeviceUpdater[4765]: Entered:_AMMuxedVersion2DeviceConnected, mux-device:4541
-Mar 12 17:33:45 Nikolays-MacBook-Pro syslogd[532]: ASL Sender Statistics
-Mar 12 17:33:45 Nikolays-MacBook-Pro AMPDeviceDiscoveryAgent[1146]: Entered:_AMMuxedVersion2DeviceConnected, mux-device:4541
-Mar 12 17:33:47 Nikolays-MacBook-Pro AMPDevicesAgent[67221]: Entered:_AMMuxedVersion2DeviceConnected, mux-device:4541
-Mar 12 17:44:54 Nikolays-MacBook-Pro syslogd[532]: ASL Sender Statistics
-```
-
-### Expose system statistic with `vmstat`
+### Live system metrics with `vmstat`
 
 ```bash
 watchhttp vmstat
@@ -111,6 +95,26 @@ Pageins:                               23222205.
 Pageouts:                                 12866.
 Swapins:                                 435185.
 Swapouts:                                477406.
+```
+
+### Watch file `tail` or `cat`
+
+```bash
+watchhttp tail /var/log/system.log
+```
+
+```bash
+$ curl localhost:9000/            
+Mar 12 16:16:07 Nikolays-MacBook-Pro syslogd[532]: ASL Sender Statistics
+Mar 12 16:32:06 Nikolays-MacBook-Pro syslogd[532]: ASL Sender Statistics
+Mar 12 16:48:15 Nikolays-MacBook-Pro syslogd[532]: ASL Sender Statistics
+Mar 12 17:04:22 Nikolays-MacBook-Pro syslogd[532]: ASL Sender Statistics
+Mar 12 17:22:24 Nikolays-MacBook-Pro syslogd[532]: ASL Sender Statistics
+Mar 12 17:33:45 Nikolays-MacBook-Pro MobileDeviceUpdater[4765]: Entered:_AMMuxedVersion2DeviceConnected, mux-device:4541
+Mar 12 17:33:45 Nikolays-MacBook-Pro syslogd[532]: ASL Sender Statistics
+Mar 12 17:33:45 Nikolays-MacBook-Pro AMPDeviceDiscoveryAgent[1146]: Entered:_AMMuxedVersion2DeviceConnected, mux-device:4541
+Mar 12 17:33:47 Nikolays-MacBook-Pro AMPDevicesAgent[67221]: Entered:_AMMuxedVersion2DeviceConnected, mux-device:4541
+Mar 12 17:44:54 Nikolays-MacBook-Pro syslogd[532]: ASL Sender Statistics
 ```
 
 ---
