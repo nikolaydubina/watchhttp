@@ -1,6 +1,7 @@
 # 🌺 watchhttp
 
 [![Go Report Card](https://goreportcard.com/badge/github.com/nikolaydubina/watchhttp)](https://goreportcard.com/report/github.com/nikolaydubina/watchhttp)
+[![codecov](https://codecov.io/gh/nikolaydubina/watchhttp/branch/master/graph/badge.svg?token=PMs70WQIVI)](https://codecov.io/gh/nikolaydubina/watchhttp)
 
 > Run command periodically and expose latest STDOUT as HTTP endpoint
 
