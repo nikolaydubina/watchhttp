@@ -46,6 +46,12 @@ $ curl localhost:9000/
 }
 ```
 
+```bash
+watchhttp -t 2s -json -- /bin/sh -c "curl --location 'api.coincap.io/v2/rates/bitcoin' | jq"
+```
+
+![](./img/example-btc-static.png)
+
 ### Live graph of Kubernetes resources with `kubectl` and `graphviz`
 
 ```bash
@@ -160,6 +166,8 @@ Overall, this is separate problem of exposing terminal throuhg browser.
 
 ### Appendix D: Interesting free real time data sources
 
+* https://github.com/public-apis/public-apis
+
 #### Stock Sentiment in `/r/Wallstreetbets`
 * https://tradestie.com/apps/reddit/api/
 * `curl -XGET 'https://tradestie.com/api/v1/apps/reddit'`
@@ -168,5 +176,11 @@ Overall, this is separate problem of exposing terminal throuhg browser.
 
 #### Weather forecast
 * `curl https://api.open-meteo.com/v1/forecast?latitude=52.52&longitude=13.41&current_weather=true&hourly=temperature_2m,relativehumidity_2m,windspeed_10m`
+* no auth
+* no limit
+
+#### Bitcoin rates
+* https://docs.coincap.io/#intro
+* `curl --location 'api.coincap.io/v2/rates/bitcoin'`
 * no auth
 * no limit
