@@ -68,7 +68,10 @@ func main() {
 	}
 	go runner.Run()
 
-	runnerHandler := ForwardHandler{Provider: &runner}
+	runnerHandler := ForwardHandler{
+		Provider: &runner,
+		Interval: interval,
+	}
 	if contentTypeJSON {
 		runnerHandler.ContentType = "application/json"
 	}
@@ -80,6 +83,7 @@ func main() {
 // ForwardHandler will call Payload from wrapped class and serve it in response
 type ForwardHandler struct {
 	ContentType string
+	Interval    time.Duration
 	Provider    interface {
 		WriteBody(w io.Writer) (int64, error)
 	}
@@ -89,6 +93,7 @@ func (s ForwardHandler) handleRequest(w http.ResponseWriter, req *http.Request) 
 	if s.ContentType != "" {
 		w.Header().Set("Content-Type", s.ContentType)
 	}
+	w.Header().Set("Refresh", fmt.Sprintf("%.0f", (s.Interval.Seconds())))
 	if _, err := s.Provider.WriteBody(w); err != nil {
 		log.Fatal(err)
 	}

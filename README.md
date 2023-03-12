@@ -6,6 +6,10 @@
 
 > Run command periodically and expose latest STDOUT as HTTP endpoint
 
+* <200LOC
+* no dependencies
+* automatic browser refresh via `Refresh` header
+
 ```bash
 go install github.com/nikolaydubina/watchhttp@latest
 ```
