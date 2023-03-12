@@ -22,16 +22,14 @@ Run command periodically and expose latest STDOUT as HTTP endpoint
 
 Examples:
 $ watchhttp -t 1s -p 9000 -- ls -la
-$ watchhttp -t 5s -p 9000 -json -- cat myfile.json
-$ watchhttp -t 5s -p 9000 -json -- kubectl get pod mypod -o=json
-$ watchhttp -t 5s -p 9000 -json -- curl ...
-$ watchhttp -t 5s -p 9000 -json -- /bin/sh -c 'curl ... | jq'
-$ watchhttp -t 5s -p 9000 -- kubectl get pod mypod
+$ watchhttp vmstat
+$ watchhttp tail /var/log/system.log
+$ watchhttp -json -- cat myfile.json
+$ watchhttp -p 9000 -json -- kubectl get pod mypod -o=json
+$ watchhttp -p 9000 -- kubectl get pod mypod
+$ watchhttp curl ...
+$ watchhttp -json -- /bin/sh -c 'curl ... | jq'
 $ watchhttp -t 5s -p 9000 -- graph
-
-$ watchhttp -t 1s -p 9000 -- ls
-$ watchhttp ls -la
-$ watchhttp ls
 
 Command options:
 `

@@ -1,4 +1,4 @@
-# watchhttp
+# 🌺 watchhttp
 
 > Run command periodically and expose latest STDOUT as HTTP endpoint
 
@@ -19,7 +19,7 @@ https://www.w3schools.com/jsref/met_loc_reload.asp
 ### Fetch and transform external resource with `curl` and `jq`
 
 ```bash
-wathchttp -t 5s -json -- /bin/sh -c 'curl "https://api.open-meteo.com/v1/forecast?latitude=52.52&longitude=13.41&current_weather=true&hourly=temperature_2m,relativehumidity_2m,windspeed_10m" | jq "del(.hourly)"'
+watchhttp -t 5s -json -- /bin/sh -c 'curl "https://api.open-meteo.com/v1/forecast?latitude=52.52&longitude=13.41&current_weather=true&hourly=temperature_2m,relativehumidity_2m,windspeed_10m" | jq "del(.hourly)"'
 ```
 
 ```bash
@@ -48,22 +48,26 @@ $ curl localhost:9000/
 }
 ```
 
-### Fetch external resource with `curl`
+### Create live graph of Kubernetes resources with `kubectl`, `jsonl-graph`, and `graphviz`
 
 ```bash
-wathchttp -t 5s -json -- curl "https://api.open-meteo.com/v1/forecast?latitude=52.52&longitude=13.41&current_weather=true&hourly=temperature_2m,relativehumidity_2m,windspeed_10m"
+watchhttp -t 3s -p 9000 -- /bin/sh -c "kubectl get pods -o json | jq '.items[] | {to: (.kind + \":\" + .metadata.name), from: (.metadata.ownerReferences[].kind + \":\" + .metadata.ownerReferences[].name)}' | jsonl-graph | dot -Tsvg""
 ```
 
+![](./img/example-k8s-graph.png)
+
+### Get live status of Kubernetes resource with `kubectl`
+
 ```bash
-$ curl -localhost:9000/                                                              
-{"latitude":52.52,"longitude":13.419998,"generationtime_ms":0.598907470703125,"utc_offset_seconds":0,"timezone":"GMT","timezone_abbr
-eviation":"GMT","elevation":38.0,"current_weather":{"temperature":1.3,"windspeed":8.4,...
+watchhttp -t 3s -p 9000 -- kubectl describe deployment hello-minikube
 ```
+
+![](./img/example-k8s-describe-static.png)
 
 ### Watch file `tail` or `cat`
 
 ```bash
-wathchttp tail /var/log/system.log
+watchhttp tail /var/log/system.log
 ```
 
 ```bash
@@ -83,7 +87,7 @@ Mar 12 17:44:54 Nikolays-MacBook-Pro syslogd[532]: ASL Sender Statistics
 ### Expose system statistic with `vmstat`
 
 ```bash
-wathchttp vmstat
+watchhttp vmstat
 ```
 
 ```bash
