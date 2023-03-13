@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	_ "embed"
 	"flag"
 	"fmt"
 	"io"
@@ -16,6 +17,9 @@ import (
 
 	"github.com/nikolaydubina/watchhttp/internal/args"
 )
+
+//go:embed internal/webdelta/index.html
+var page []byte
 
 const doc string = `
 Run command periodically and expose latest STDOUT as HTTP endpoint
@@ -69,7 +73,7 @@ func main() {
 	go runner.Run()
 
 	runnerHandler := ForwardHandler{
-		Provider: &runner,
+		Provider: &FixRunner{},
 		Interval: interval,
 	}
 	if contentTypeJSON {
@@ -97,6 +101,12 @@ func (s ForwardHandler) handleRequest(w http.ResponseWriter, req *http.Request) 
 	if _, err := s.Provider.WriteTo(w); err != nil {
 		log.Fatal(err)
 	}
+}
+
+type FixRunner struct{}
+
+func (s *FixRunner) WriteTo(w io.Writer) (written int64, err error) {
+	return io.Copy(w, bytes.NewReader(page))
 }
 
 // CmdRunner runs command on interval and stores last STDOUT in buffer
