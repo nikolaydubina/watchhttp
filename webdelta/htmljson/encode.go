@@ -7,6 +7,7 @@ import (
 	"reflect"
 	"sort"
 	"strconv"
+	"strings"
 )
 
 // Marshaller convert struct as JSON represented into HTML.
@@ -43,10 +44,11 @@ type MapMarshaller struct {
 }
 
 // Marshal convert struct as JSON represented into HTML.
+// Passes JSON path to render specific JSON elements.
 // Inspired by encoding/json.
 // Warning: Should be used only for basic Go types: bool, float64, string, []any, map[string]any, nil.
-// Warning: does not handle pointers.
-// You can get allowed input easily if you json.Unmarshal of JSON to any or to respective types.
+// Warning: does not handle pointers, does not handle custom struct.
+// You can get allowed input easily with json.Unmarshal to any.
 func (s *Marshaller) Marshal(v any) []byte {
 	b := bytes.Buffer{}
 	s.MarshalTo(&b, v)
@@ -99,7 +101,14 @@ func (s *Marshaller) valueEncoder(v any) encoderFn {
 	}
 }
 
+func (s *Marshaller) writeNoOffset(v string) {
+	_, err := io.WriteString(s.w, v)
+	s.err = append(s.err, err)
+}
+
 func (s *Marshaller) write(v string) {
+	padding := strings.Repeat("    ", s.depth)
+	io.WriteString(s.w, padding)
 	_, err := io.WriteString(s.w, v)
 	s.err = append(s.err, err)
 }
@@ -108,51 +117,53 @@ func (s *Marshaller) encodeUnsupported(v reflect.Value) {
 	s.err = append(s.err, errors.New("skip unsupported type at key("+s.key+") kind("+v.Kind().String()+")"))
 }
 
-func (s *Marshaller) encodeNull(v reflect.Value) { s.write(s.Null(s.key)) }
+func (s *Marshaller) encodeNull(v reflect.Value) { s.writeNoOffset(s.Null(s.key)) }
 
-func (s *Marshaller) encodeBool(v reflect.Value) { s.write(s.Bool(s.key, v.Bool())) }
+func (s *Marshaller) encodeBool(v reflect.Value) { s.writeNoOffset(s.Bool(s.key, v.Bool())) }
 
-func (s *Marshaller) encodeString(v reflect.Value) { s.write(s.String(s.key, v.String())) }
+func (s *Marshaller) encodeString(v reflect.Value) { s.writeNoOffset(s.String(s.key, v.String())) }
 
 func (s *Marshaller) encodeFloat64(v reflect.Value) {
-	s.write(s.Number(s.key, v.Float(), strconv.FormatFloat(v.Float(), 'f', -1, 64)))
+	s.writeNoOffset(s.Number(s.key, v.Float(), strconv.FormatFloat(v.Float(), 'f', -1, 64)))
 }
 
 func (s *Marshaller) encodeArray(v reflect.Value) {
-	s.write(s.Array.OpenBracket)
-	s.write("\n")
+	n := v.Len()
+
+	s.writeNoOffset(s.Array.OpenBracket)
+
+	if n == 0 {
+		s.writeNoOffset(s.Array.CloseBracket)
+		return
+	}
+
+	// write array
+
+	k, d := s.key, s.depth
+	s.writeNoOffset("\n")
 	s.row++
 
-	k := s.key
-	d := s.depth
-
-	n := v.Len()
 	for i := 0; i < n; i++ {
 		if i > 0 {
-			s.write(s.Array.Comma)
-			s.write("\n")
+			s.writeNoOffset(s.Array.Comma)
+			s.writeNoOffset("\n")
 			s.row++
 		}
 
 		s.key = k + "[" + strconv.Itoa(i) + "]"
 		s.depth = d + 1
 
+		s.write("") // fake virtual key, to apply same offset logic as JSON Map
 		s.marshal(v.Index(i).Interface())
 	}
 
-	s.key = k
-	s.depth = d
-
-	s.write(s.Array.CloseBracket)
-	s.write("\n")
+	s.key, s.depth = k, d
 	s.row++
+	s.writeNoOffset("\n")
+	s.write(s.Array.CloseBracket)
 }
 
 func (s *Marshaller) encodeMap(v reflect.Value) {
-	s.write(s.Map.OpenBracket)
-	s.write("\n")
-	s.row++
-
 	type mapKV struct {
 		rk reflect.Value
 		rv reflect.Value
@@ -175,15 +186,26 @@ func (s *Marshaller) encodeMap(v reflect.Value) {
 		sv[i].v = v.MapIndex(mi.Key()).Interface()
 	}
 
-	sort.Slice(sv, func(i, j int) bool { return sv[i].ks < sv[j].ks })
+	s.writeNoOffset(s.Map.OpenBracket)
 
-	k := s.key
-	d := s.depth
+	if len(sv) == 0 {
+		s.writeNoOffset(s.Map.CloseBracket)
+		return
+	}
+
+	// write map
+	k, d := s.key, s.depth
+
+	s.writeNoOffset(s.Map.OpenBracket)
+	s.writeNoOffset("\n")
+	s.row++
+
+	sort.Slice(sv, func(i, j int) bool { return sv[i].ks < sv[j].ks })
 
 	for i, kv := range sv {
 		if i > 0 {
-			s.write(s.Map.Comma)
-			s.write("\n")
+			s.writeNoOffset(s.Map.Comma)
+			s.writeNoOffset("\n")
 			s.row++
 		}
 
@@ -192,16 +214,14 @@ func (s *Marshaller) encodeMap(v reflect.Value) {
 
 		// key
 		s.write(s.Map.Key(s.key, kv.ks))
-		s.write(s.Map.Colon)
+		s.writeNoOffset(s.Map.Colon)
 
 		// value
 		s.marshal(kv.v)
 	}
 
-	s.key = k
-	s.depth = d
-
-	s.write(s.Map.CloseBracket)
-	s.write("\n")
+	s.key, s.depth = k, d
 	s.row++
+	s.writeNoOffset("\n")
+	s.write(s.Map.CloseBracket)
 }
