@@ -21,11 +21,11 @@ type Marshaller struct {
 	Number func(key string, v float64, s string) string
 	Array  ArrayMarshaller
 	Map    MapMarshaller
+	Row    func(s string, padding int) string
 
-	w     io.Writer
+	*RowWriter
 	depth int
 	key   string
-	row   int
 	err   []error
 }
 
@@ -56,11 +56,16 @@ func (s *Marshaller) Marshal(v any) []byte {
 }
 
 func (s *Marshaller) MarshalTo(w io.Writer, v any) error {
-	s.w = w
 	s.depth = 0
 	s.key = "$"
-	s.row = 0
+	s.RowWriter = &RowWriter{
+		b:   strings.Builder{},
+		w:   w,
+		Row: s.Row,
+	}
 	s.marshal(v)
+	s.flush(s.depth)
+	s.err = append(s.err, s.RowWriter.err...)
 	return errors.Join(s.err...)
 }
 
@@ -101,51 +106,59 @@ func (s *Marshaller) valueEncoder(v any) encoderFn {
 	}
 }
 
-func (s *Marshaller) writeNoOffset(v string) {
-	_, err := io.WriteString(s.w, v)
+// RowWriter accumulates items written to row and flushes it as a wrapped row on flush calls
+// flush has to be called eventually.
+type RowWriter struct {
+	b   strings.Builder
+	w   io.Writer
+	Row func(s string, padding int) string
+	err []error
+}
+
+func (s *RowWriter) write(v string) {
+	_, err := s.b.WriteString(v)
 	s.err = append(s.err, err)
 }
 
-func (s *Marshaller) write(v string) {
-	s.writeNoOffset(strings.Repeat("    ", s.depth))
-	s.writeNoOffset(v)
+func (s *RowWriter) flush(depth int) {
+	v := s.Row(s.b.String()+"\n", 4*depth)
+	_, err := io.WriteString(s.w, v)
+	s.err = append(s.err, err)
+	s.b.Reset()
 }
 
 func (s *Marshaller) encodeUnsupported(v reflect.Value) {
 	s.err = append(s.err, errors.New("skip unsupported type at key("+s.key+") kind("+v.Kind().String()+")"))
 }
 
-func (s *Marshaller) encodeNull(v reflect.Value) { s.writeNoOffset(s.Null(s.key)) }
+func (s *Marshaller) encodeNull(v reflect.Value) { s.write(s.Null(s.key)) }
 
-func (s *Marshaller) encodeBool(v reflect.Value) { s.writeNoOffset(s.Bool(s.key, v.Bool())) }
+func (s *Marshaller) encodeBool(v reflect.Value) { s.write(s.Bool(s.key, v.Bool())) }
 
-func (s *Marshaller) encodeString(v reflect.Value) { s.writeNoOffset(s.String(s.key, v.String())) }
+func (s *Marshaller) encodeString(v reflect.Value) { s.write(s.String(s.key, v.String())) }
 
 func (s *Marshaller) encodeFloat64(v reflect.Value) {
-	s.writeNoOffset(s.Number(s.key, v.Float(), strconv.FormatFloat(v.Float(), 'f', -1, 64)))
+	s.write(s.Number(s.key, v.Float(), strconv.FormatFloat(v.Float(), 'f', -1, 64)))
 }
 
 func (s *Marshaller) encodeArray(v reflect.Value) {
 	n := v.Len()
 
-	s.writeNoOffset(s.Array.OpenBracket)
+	s.write(s.Array.OpenBracket)
 
 	if n == 0 {
-		s.writeNoOffset(s.Array.CloseBracket)
+		s.write(s.Array.CloseBracket)
 		return
 	}
 
 	// write array
 	k, d := s.key, s.depth
-
-	s.writeNoOffset("\n")
-	s.row++
+	s.flush(d)
 
 	for i := 0; i < n; i++ {
 		if i > 0 {
-			s.writeNoOffset(s.Array.Comma)
-			s.writeNoOffset("\n")
-			s.row++
+			s.write(s.Array.Comma)
+			s.flush(d)
 		}
 
 		s.key = k + "[" + strconv.Itoa(i) + "]"
@@ -156,8 +169,7 @@ func (s *Marshaller) encodeArray(v reflect.Value) {
 	}
 
 	s.key, s.depth = k, d
-	s.row++
-	s.writeNoOffset("\n")
+	s.flush(s.depth)
 	s.write(s.Array.CloseBracket)
 }
 
@@ -184,26 +196,24 @@ func (s *Marshaller) encodeMap(v reflect.Value) {
 		sv[i].v = v.MapIndex(mi.Key()).Interface()
 	}
 
-	s.writeNoOffset(s.Map.OpenBracket)
+	s.write(s.Map.OpenBracket)
 
 	if len(sv) == 0 {
-		s.writeNoOffset(s.Map.CloseBracket)
+		s.write(s.Map.CloseBracket)
 		return
 	}
 
 	// write map
 	k, d := s.key, s.depth
 
-	s.writeNoOffset("\n")
-	s.row++
+	s.flush(d)
 
 	sort.Slice(sv, func(i, j int) bool { return sv[i].ks < sv[j].ks })
 
 	for i, kv := range sv {
 		if i > 0 {
-			s.writeNoOffset(s.Map.Comma)
-			s.writeNoOffset("\n")
-			s.row++
+			s.write(s.Map.Comma)
+			s.flush(d)
 		}
 
 		s.key = k + "." + kv.ks
@@ -211,14 +221,13 @@ func (s *Marshaller) encodeMap(v reflect.Value) {
 
 		// key
 		s.write(s.Map.Key(s.key, kv.ks))
-		s.writeNoOffset(s.Map.Colon)
+		s.write(s.Map.Colon)
 
 		// value
 		s.marshal(kv.v)
 	}
 
 	s.key, s.depth = k, d
-	s.row++
-	s.writeNoOffset("\n")
+	s.flush(s.depth)
 	s.write(s.Map.CloseBracket)
 }

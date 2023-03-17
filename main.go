@@ -18,9 +18,6 @@ import (
 	"github.com/nikolaydubina/watchhttp/args"
 )
 
-//go:embed webdelta/index.html
-var page []byte
-
 const doc string = `
 Run command periodically and expose latest STDOUT as HTTP endpoint
 
@@ -49,12 +46,14 @@ func main() {
 		port            int           = 9000
 		interval        time.Duration = time.Second
 		contentTypeJSON bool          = false
+		isDelta         bool          = false
 	)
 
 	if hasFlags {
 		flag.IntVar(&port, "p", port, "port")
 		flag.DurationVar(&interval, "t", interval, `interval to execute command (units: ns, us, µs, ms, s, m, h, d, w, y)`)
 		flag.BoolVar(&contentTypeJSON, "json", contentTypeJSON, "set Content-Type: application/json")
+		flag.BoolVar(&isDelta, "d", isDelta, "show animated HTML delta difference (only JSON)")
 		flag.Parse()
 	}
 
@@ -72,8 +71,12 @@ func main() {
 	}
 	go runner.Run()
 
+	if isDelta {
+
+	}
+
 	runnerHandler := ForwardHandler{
-		Provider: &FixRunner{},
+		Provider: &runner,
 		Interval: interval,
 	}
 	if contentTypeJSON {
@@ -103,18 +106,18 @@ func (s ForwardHandler) handleRequest(w http.ResponseWriter, req *http.Request) 
 	}
 }
 
-type FixRunner struct{}
-
-func (s *FixRunner) WriteTo(w io.Writer) (written int64, err error) {
-	return io.Copy(w, bytes.NewReader(page))
-}
-
 // CmdRunner runs command on interval and stores last STDOUT in buffer
 type CmdRunner struct {
 	ticker     *time.Ticker
 	cmd        []string
 	lastStdOut *bytes.Buffer
 	mtx        *sync.RWMutex
+}
+
+func (s *CmdRunner) LastStdOutBytes() []byte {
+	s.mtx.RLock()
+	defer s.mtx.RUnlock()
+	return s.lastStdOut.Bytes()
 }
 
 func (s *CmdRunner) WriteTo(w io.Writer) (written int64, err error) {

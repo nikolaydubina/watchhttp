@@ -5,14 +5,29 @@
 <style> 
 
 :root {
-  --text-grey: #737475;
+  --text-grey-l0: #737475;
+  --text-grey-l1: #7f8181;;
+  --text-grey-l2: #d7d7d7;;
   --text-green: #1dff77; 
   --text-red: #d31818; 
 }
 
-.text {
-  color: var(--text-grey);
+/* json */
+
+.json-lang, .json-key, .json-value {
+  display: inline;
+  font-family: monospace;
 }
+
+.json-lang {
+  color:var(--text-grey-l2);
+}
+
+.json-key {
+  color:var(--text-grey-l1);
+}
+
+/* animations */
 
 .number-up {
   animation-name: anim-number-up;
@@ -28,42 +43,19 @@
 
 @keyframes anim-number-up {
   0%   {color:var(--text-green);}
-  100%  {color:var(--text-grey);}
+  100%  {color:var(--text-grey-l0);}
 }
 
 @keyframes anim-number-down {
   0%   {color:var(--text-red);}
-  100%  {color:var(--text-grey);}
+  100%  {color:var(--text-grey-l0);}
 }
 
 </style>
 </head>
 <body>
-<div id="struct">
 
-<div class="row">
-
-<div class="key text">
-number-up:
-</div>
-
-<div class="value text number-up">
-1000
-</div>
-
-</div>
-
-<div class="row">
-
-<div class="key text">
-number-down:
-</div>
-
-<div class="value text number-down">
-50
-</div>
-
-</div>
+{{.JSONText}}
 
 </div>
 </body>

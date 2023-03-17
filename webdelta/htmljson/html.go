@@ -1,5 +1,7 @@
 package htmljson
 
+import "strings"
+
 func NullHTML(k string) string { return `<div class="json-lang json-value json-null">null</div>` }
 
 func BoolHTML(k string, v bool) string {
@@ -29,7 +31,12 @@ var DefaultMapHTML = MapMarshaller{
 	CloseBracket: `<div class="json-lang">}</div>`,
 	Comma:        `<div class="json-lang">,</div>`,
 	Colon:        `<div class="json-lang">:</div>`,
-	Key:          func(key string, v string) string { return `<div class="json-key json-string">` + v + `</div>` },
+	Key:          func(key string, v string) string { return `<div class="json-key json-string">"` + v + `"</div>` },
+}
+
+func DefaultRow(s string, padding int) string {
+	p := `<div class="json-container-padding">` + strings.Repeat("-", padding) + `</div>`
+	return `<div class="json-container-row">` + p + s + `</div>`
 }
 
 // DefaultMarshaller adds basic HTML div classes for further styling.
@@ -40,4 +47,5 @@ var DefaultMarshaller = Marshaller{
 	Number: NumberHTML,
 	Array:  DefaultArrayHTML,
 	Map:    DefaultMapHTML,
+	Row:    DefaultRow,
 }
