@@ -25,6 +25,7 @@ type Marshaller struct {
 	w     io.Writer
 	depth int
 	key   string
+	row   int
 }
 
 type ArrayMarshaller struct {
@@ -56,6 +57,7 @@ func (s *Marshaller) MarshalTo(w io.Writer, v any) error {
 	s.w = w
 	s.depth = 0
 	s.key = "$"
+	s.row = 0
 	return s.marshal(v)
 }
 
@@ -105,9 +107,7 @@ func (s *Marshaller) encodeUnsupported(v reflect.Value) error {
 	return fmt.Errorf("skip unsupported type at key(%s) value(%#v) kind(%v)", s.key, v, v.Kind())
 }
 
-func (s *Marshaller) encodeNull(v reflect.Value) error {
-	return s.write(s.Null(s.key))
-}
+func (s *Marshaller) encodeNull(v reflect.Value) error { return s.write(s.Null(s.key)) }
 
 func (s *Marshaller) encodeBool(v reflect.Value) error {
 	return s.write(s.Bool(s.key, v.Bool()))
@@ -128,9 +128,7 @@ func (s *Marshaller) encodeFloat64(v reflect.Value) error {
 func (s *Marshaller) encodeArray(v reflect.Value) error {
 	s.write(s.Array.OpenBracket)
 	s.write("\n")
-
-	// TODO: increment row
-	// TODO: increment offset
+	s.row++
 
 	k := s.key
 	d := s.depth
@@ -139,23 +137,22 @@ func (s *Marshaller) encodeArray(v reflect.Value) error {
 	for i := 0; i < n; i++ {
 		if i > 0 {
 			s.write(s.Array.Comma)
+			s.write("\n")
+			s.row++
 		}
 
 		s.key = k + "[" + strconv.Itoa(i) + "]"
 		s.depth = d + 1
 
 		s.marshal(v.Index(i).Interface())
-
-		s.write("\n")
 	}
 
 	s.key = k
 	s.depth = d
 
-	// TODO: increment row
-
-	s.write("\n")
 	s.write(s.Array.CloseBracket)
+	s.write("\n")
+	s.row++
 
 	return nil
 }
@@ -163,9 +160,7 @@ func (s *Marshaller) encodeArray(v reflect.Value) error {
 func (s *Marshaller) encodeMap(v reflect.Value) error {
 	s.write(s.Map.OpenBracket)
 	s.write("\n")
-
-	// TODO: increment row
-	// TODO: increment offset
+	s.row++
 
 	type mapKV struct {
 		rk reflect.Value
@@ -198,6 +193,7 @@ func (s *Marshaller) encodeMap(v reflect.Value) error {
 		if i > 0 {
 			s.write(s.Map.Comma)
 			s.write("\n")
+			s.row++
 		}
 
 		s.key = k + "." + kv.ks
@@ -209,18 +205,14 @@ func (s *Marshaller) encodeMap(v reflect.Value) error {
 
 		// value
 		s.marshal(kv.v)
-
-		// TODO: increment row
-		// TODO: increment offset
 	}
 
 	s.key = k
 	s.depth = d
 
-	// TODO: increment row
-
-	s.write("\n")
 	s.write(s.Map.CloseBracket)
+	s.write("\n")
+	s.row++
 
 	return nil
 }
