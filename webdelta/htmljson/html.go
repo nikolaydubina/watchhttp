@@ -11,7 +11,7 @@ func BoolHTML(k string, v bool) string {
 
 func StringHTML(k string, v string) string { return `<div>"` + v + `"</div>` }
 
-func NumberHTML(k string, v float64, s string) string { return `<div>"` + s + `"</div>` }
+func NumberHTML(k string, v float64, s string) string { return `<div>` + s + `</div>` }
 
 var DefaultArrayHTML = ArrayMarshaller{
 	OpenBracket:  `<div>[</div>`,

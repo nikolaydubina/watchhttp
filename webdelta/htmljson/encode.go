@@ -2,7 +2,6 @@ package htmljson
 
 import (
 	"bytes"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -117,8 +116,7 @@ func (s *Marshaller) encodeBool(v reflect.Value) { s.write(s.Bool(s.key, v.Bool(
 func (s *Marshaller) encodeString(v reflect.Value) { s.write(s.String(s.key, v.String())) }
 
 func (s *Marshaller) encodeFloat64(v reflect.Value) {
-	b, _ := json.Marshal(v.Float())
-	s.write(s.Number(s.key, v.Float(), string(b)))
+	s.write(s.Number(s.key, v.Float(), strconv.FormatFloat(v.Float(), 'f', -1, 64)))
 }
 
 func (s *Marshaller) encodeArray(v reflect.Value) {
