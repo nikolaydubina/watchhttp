@@ -136,8 +136,8 @@ func (s *Marshaller) encodeArray(v reflect.Value) {
 	}
 
 	// write array
-
 	k, d := s.key, s.depth
+
 	s.writeNoOffset("\n")
 	s.row++
 
