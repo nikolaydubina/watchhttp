@@ -107,10 +107,8 @@ func (s *Marshaller) writeNoOffset(v string) {
 }
 
 func (s *Marshaller) write(v string) {
-	padding := strings.Repeat("    ", s.depth)
-	io.WriteString(s.w, padding)
-	_, err := io.WriteString(s.w, v)
-	s.err = append(s.err, err)
+	s.writeNoOffset(strings.Repeat("    ", s.depth))
+	s.writeNoOffset(v)
 }
 
 func (s *Marshaller) encodeUnsupported(v reflect.Value) {
