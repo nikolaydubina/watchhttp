@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"reflect"
 	"sort"
 	"strconv"
@@ -41,25 +42,21 @@ type MapMarshaller struct {
 // Warning: Should be used only for basic Go types: bool, float64, string, []any, map[string]any, nil.
 // Warning: does not handle pointers.
 // You can get allowed input easily if you json.Unmarshal of JSON to any or to respective types.
-func (s Marshaller) Marshal(v any) ([]byte, error) {
-	e := encoder{s: s}
-
-	e.marshal("$", v)
-
-	buf := append([]byte(nil), e.Bytes()...)
-	return buf, nil
+func (s Marshaller) Marshal(v any) []byte {
+	b := bytes.Buffer{}
+	s.MarshalTo(&b, v)
+	return b.Bytes()
 }
 
-type encoder struct {
-	s Marshaller
-	bytes.Buffer
+func (s Marshaller) MarshalTo(w io.Writer, v any) {
+	s.marshal(w, "$", v)
 }
 
-func (e *encoder) marshal(key string, v any) {
-	valueEncoder(v)(e, key, reflect.ValueOf(v))
+func (s *Marshaller) marshal(w io.Writer, key string, v any) {
+	valueEncoder(v)(s, w, key, reflect.ValueOf(v))
 }
 
-type encoderFn func(e *encoder, key string, v reflect.Value)
+type encoderFn func(s *Marshaller, w io.Writer, key string, v reflect.Value)
 
 func valueEncoder(v any) encoderFn {
 	if v == nil {
@@ -86,8 +83,6 @@ func valueEncoder(v any) encoderFn {
 	case reflect.Slice, reflect.Array:
 		return encodeArray
 
-	// null or recursive
-
 	// if we have struct, we did something wrong
 	case reflect.Struct:
 		return encodeUnsupported
@@ -96,52 +91,56 @@ func valueEncoder(v any) encoderFn {
 	}
 }
 
-func encodeUnsupported(e *encoder, key string, v reflect.Value) {
+func encodeUnsupported(s *Marshaller, w io.Writer, key string, v reflect.Value) {
 	panic(fmt.Errorf("skip unsupported type at key(%s) value(%#v) kind(%v)", key, v, v.Kind()))
 }
 
-func encodeNull(e *encoder, key string, v reflect.Value) { e.WriteString(e.s.Null(key)) }
-
-func encodeBool(e *encoder, key string, v reflect.Value) { e.WriteString(e.s.Bool(key, v.Bool())) }
-
-func encodeString(e *encoder, key string, v reflect.Value) {
-	e.WriteString(e.s.String(key, v.String()))
+func encodeNull(s *Marshaller, w io.Writer, key string, v reflect.Value) {
+	io.WriteString(w, s.Null(key))
 }
 
-func encodeFloat64(e *encoder, key string, v reflect.Value) {
+func encodeBool(s *Marshaller, w io.Writer, key string, v reflect.Value) {
+	io.WriteString(w, s.Bool(key, v.Bool()))
+}
+
+func encodeString(s *Marshaller, w io.Writer, key string, v reflect.Value) {
+	io.WriteString(w, s.String(key, v.String()))
+}
+
+func encodeFloat64(s *Marshaller, w io.Writer, key string, v reflect.Value) {
 	b, _ := json.Marshal(v.Float())
-	e.WriteString(e.s.Number(key, v.Float(), string(b)))
+	io.WriteString(w, s.Number(key, v.Float(), string(b)))
 }
 
-func encodeArray(e *encoder, key string, v reflect.Value) {
-	e.WriteString(e.s.Array.OpenBracket)
+func encodeArray(s *Marshaller, w io.Writer, key string, v reflect.Value) {
+	io.WriteString(w, s.Array.OpenBracket)
 
-	e.WriteByte('\n')
+	io.WriteString(w, "\n")
 	// TODO: increment row
 	// TODO: increment offset
 
 	n := v.Len()
 	for i := 0; i < n; i++ {
 		if i > 0 {
-			e.WriteString(e.s.Array.Comma)
+			io.WriteString(w, s.Array.Comma)
 		}
 		kk := key + "[" + strconv.Itoa(i) + "]"
 
-		e.marshal(kk, v.Index(i).Interface())
+		s.marshal(w, kk, v.Index(i).Interface())
 
-		e.WriteByte('\n')
+		io.WriteString(w, "\n")
 	}
 
 	// TODO: increment row
 
-	e.WriteByte('\n')
-	e.WriteString(e.s.Array.CloseBracket)
+	io.WriteString(w, "\n")
+	io.WriteString(w, s.Array.CloseBracket)
 
 }
 
-func encodeMap(e *encoder, key string, v reflect.Value) {
-	e.WriteString(e.s.Map.OpenBracket)
-	e.WriteByte('\n')
+func encodeMap(s *Marshaller, w io.Writer, key string, v reflect.Value) {
+	io.WriteString(w, s.Map.OpenBracket)
+	io.WriteString(w, "\n")
 
 	// TODO: increment row
 	// TODO: increment offset
@@ -172,18 +171,18 @@ func encodeMap(e *encoder, key string, v reflect.Value) {
 
 	for i, kv := range sv {
 		if i > 0 {
-			e.WriteString(e.s.Map.Comma)
-			e.WriteByte('\n')
+			io.WriteString(w, s.Map.Comma)
+			io.WriteString(w, "\n")
 		}
 
 		kk := key + "." + kv.ks
 
 		// key
-		e.WriteString(e.s.Map.Key(kk, kv.ks))
-		e.WriteString(e.s.Map.Colon)
+		io.WriteString(w, s.Map.Key(kk, kv.ks))
+		io.WriteString(w, s.Map.Colon)
 
 		// value
-		e.marshal(kk, kv.v)
+		s.marshal(w, kk, kv.v)
 
 		// TODO: increment row
 		// TODO: increment offset
@@ -191,6 +190,6 @@ func encodeMap(e *encoder, key string, v reflect.Value) {
 
 	// TODO: increment row
 
-	e.WriteByte('\n')
-	e.WriteString(e.s.Map.CloseBracket)
+	io.WriteString(w, "\n")
+	io.WriteString(w, s.Map.CloseBracket)
 }

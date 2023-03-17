@@ -18,10 +18,7 @@ func TestMarshal(t *testing.T) {
 	var v any
 	json.Unmarshal(example, &v)
 
-	h, err := s.Marshal(v)
-	if err != nil {
-		t.Error(err)
-	}
+	h := s.Marshal(v)
 
 	f, _ := os.Create("testdata/example.out.html")
 	defer f.Close()
