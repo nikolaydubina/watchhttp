@@ -3,7 +3,6 @@ package htmljson
 import (
 	"bytes"
 	"errors"
-	"fmt"
 	"io"
 	"reflect"
 	"sort"
@@ -106,7 +105,7 @@ func (s *Marshaller) write(v string) {
 }
 
 func (s *Marshaller) encodeUnsupported(v reflect.Value) {
-	s.err = append(s.err, fmt.Errorf("skip unsupported type at key(%s) value(%#v) kind(%v)", s.key, v, v.Kind()))
+	s.err = append(s.err, errors.New("skip unsupported type at key("+s.key+") kind("+v.Kind().String()+")"))
 }
 
 func (s *Marshaller) encodeNull(v reflect.Value) { s.write(s.Null(s.key)) }
