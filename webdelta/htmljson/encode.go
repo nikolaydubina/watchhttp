@@ -121,7 +121,7 @@ func (s *RowWriter) write(v string) {
 }
 
 func (s *RowWriter) flush(depth int) {
-	v := s.Row(s.b.String()+"\n", 4*depth)
+	v := s.Row(s.b.String()+"\n", depth)
 	_, err := io.WriteString(s.w, v)
 	s.err = append(s.err, err)
 	s.b.Reset()
