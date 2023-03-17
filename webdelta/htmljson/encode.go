@@ -196,7 +196,6 @@ func (s *Marshaller) encodeMap(v reflect.Value) {
 	// write map
 	k, d := s.key, s.depth
 
-	s.writeNoOffset(s.Map.OpenBracket)
 	s.writeNoOffset("\n")
 	s.row++
 
