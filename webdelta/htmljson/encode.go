@@ -155,22 +155,23 @@ func (s *Marshaller) encodeArray(v reflect.Value) {
 	k, d := s.key, s.depth
 	s.flush(d)
 
+	s.depth = d + 1
 	for i := 0; i < n; i++ {
 		if i > 0 {
 			s.write(s.Array.Comma)
-			s.flush(d)
+			s.flush(s.depth)
 		}
 
 		s.key = k + "[" + strconv.Itoa(i) + "]"
-		s.depth = d + 1
 
 		s.write("") // fake virtual key, to apply same offset logic as JSON Map
 		s.marshal(v.Index(i).Interface())
 	}
 
-	s.key, s.depth = k, d
 	s.flush(s.depth)
 	s.write(s.Array.CloseBracket)
+
+	s.key, s.depth = k, d
 }
 
 func (s *Marshaller) encodeMap(v reflect.Value) {
@@ -210,14 +211,14 @@ func (s *Marshaller) encodeMap(v reflect.Value) {
 
 	sort.Slice(sv, func(i, j int) bool { return sv[i].ks < sv[j].ks })
 
+	s.depth = d + 1
 	for i, kv := range sv {
 		if i > 0 {
 			s.write(s.Map.Comma)
-			s.flush(d)
+			s.flush(s.depth)
 		}
 
 		s.key = k + "." + kv.ks
-		s.depth = d + 1
 
 		// key
 		s.write(s.Map.Key(s.key, kv.ks))
@@ -227,7 +228,8 @@ func (s *Marshaller) encodeMap(v reflect.Value) {
 		s.marshal(kv.v)
 	}
 
-	s.key, s.depth = k, d
 	s.flush(s.depth)
 	s.write(s.Map.CloseBracket)
+
+	s.key, s.depth = k, d
 }
