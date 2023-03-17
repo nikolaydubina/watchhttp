@@ -35,7 +35,7 @@ var DefaultMapHTML = MapMarshaller{
 }
 
 func DefaultRow(s string, padding int) string {
-	p := `<div class="json-container-padding">` + strings.Repeat("-", padding) + `</div>`
+	p := `<div class="json-container-padding">` + strings.Repeat("&nbsp", padding) + `</div>`
 	return `<div class="json-container-row">` + p + s + `</div>`
 }
 
