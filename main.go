@@ -15,10 +15,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/nikolaydubina/watchhttp/internal/args"
+	"github.com/nikolaydubina/watchhttp/args"
 )
 
-//go:embed internal/webdelta/index.html
+//go:embed webdelta/index.html
 var page []byte
 
 const doc string = `

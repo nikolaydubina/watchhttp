@@ -1,0 +1,25 @@
+{
+    "cakes": {
+        "strawberry-cake": {
+            "size": 10,
+            "color": "white",
+            "ingredients": [
+                "cream",
+                "strawberry"
+            ]
+        },
+        "chocolate-cake": {}
+    },
+    "drinks": [
+        {
+            "name": "soda",
+            "price": 10.23
+        },
+        {
+            "name": "tea",
+            "price": 1.12
+        }
+    ],
+    "tables": [],
+    "ice-cream": null
+}

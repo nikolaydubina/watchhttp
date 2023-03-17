@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>test</title>
+<style> 
+
+:root {
+  --text-grey: #737475;
+  --text-green: #1dff77; 
+  --text-red: #d31818; 
+}
+
+.text {
+  color: var(--text-grey);
+}
+
+.number-up {
+  animation-name: anim-number-up;
+  animation-duration: 5s;
+  animation-fill-mode: forwards;
+}
+
+.number-down {
+  animation-name: anim-number-down;
+  animation-duration: 5s;
+  animation-fill-mode: forwards;
+}
+
+@keyframes anim-number-up {
+  0%   {color:var(--text-green);}
+  100%  {color:var(--text-grey);}
+}
+
+@keyframes anim-number-down {
+  0%   {color:var(--text-red);}
+  100%  {color:var(--text-grey);}
+}
+
+</style>
+</head>
+<body>
+<div id="struct">
+
+<div class="row">
+
+<div class="key text">
+number-up:
+</div>
+
+<div class="value text number-up">
+1000
+</div>
+
+</div>
+
+<div class="row">
+
+<div class="key text">
+number-down:
+</div>
+
+<div class="value text number-down">
+50
+</div>
+
+</div>
+
+</div>
+</body>
+</html>
+
+

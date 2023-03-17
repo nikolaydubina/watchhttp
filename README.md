@@ -127,10 +127,13 @@ Mar 12 17:44:54 Nikolays-MacBook-Pro syslogd[532]: ASL Sender Statistics
 
 ---
 
-### Appendix A: Existing Tools
+### Appendix A: Related Work
 
 - as of 2023-03-12, [awesome-go](http://github.com/avelino/awesome-go) does not mention any tools that can do this
 - `netcat` can not do this
+- [mantyr/jsonhtml](https://github.com/mantyr/jsonhtml) is experimental JSON to HTML renderer, assignment, no go mod 
+- [shovon/json-pretty-printer](https://github.com/shovon/json-pretty-printer) is experimental JSON to HTML renderer, no reflect, direct JSON string parsing, assignment, no go mod
+- [https://github.com/marchoy/pretty-printer](https://github.com/marchoy/pretty-printer) is experimental JSON prettifier to HTML renderer, adds syntax highlighting, no reflect, direct JSON string parsing, no tests, no go mod
 
 ### Appendix B: Alternative with file server + bash
 

@@ -6,7 +6,7 @@ import (
 
 	"golang.org/x/exp/slices"
 
-	"github.com/nikolaydubina/watchhttp/internal/args"
+	"github.com/nikolaydubina/watchhttp/args"
 )
 
 func TestGetCommandFromArgs(t *testing.T) {
