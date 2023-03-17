@@ -21,6 +21,10 @@ type Marshaller struct {
 	Number func(key string, v float64, s string) string
 	Array  ArrayMarshaller
 	Map    MapMarshaller
+
+	w     io.Writer
+	depth int
+	key   string
 }
 
 type ArrayMarshaller struct {
@@ -42,105 +46,123 @@ type MapMarshaller struct {
 // Warning: Should be used only for basic Go types: bool, float64, string, []any, map[string]any, nil.
 // Warning: does not handle pointers.
 // You can get allowed input easily if you json.Unmarshal of JSON to any or to respective types.
-func (s Marshaller) Marshal(v any) []byte {
+func (s *Marshaller) Marshal(v any) []byte {
 	b := bytes.Buffer{}
 	s.MarshalTo(&b, v)
 	return b.Bytes()
 }
 
-func (s Marshaller) MarshalTo(w io.Writer, v any) {
-	s.marshal(w, "$", v)
+func (s *Marshaller) MarshalTo(w io.Writer, v any) error {
+	s.w = w
+	s.depth = 0
+	s.key = "$"
+	return s.marshal(v)
 }
 
-func (s *Marshaller) marshal(w io.Writer, key string, v any) {
-	valueEncoder(v)(s, w, key, reflect.ValueOf(v))
-}
+func (s *Marshaller) marshal(v any) error { return s.valueEncoder(v)(reflect.ValueOf(v)) }
 
-type encoderFn func(s *Marshaller, w io.Writer, key string, v reflect.Value)
+type encoderFn func(v reflect.Value) error
 
-func valueEncoder(v any) encoderFn {
+func (s *Marshaller) valueEncoder(v any) encoderFn {
 	if v == nil {
-		return encodeNull
+		return s.encodeNull
 	}
 
 	r := reflect.ValueOf(v)
 	if !r.IsValid() {
-		return encodeUnsupported
+		return s.encodeUnsupported
 	}
 
 	switch r.Type().Kind() {
 	// scalars
 	case reflect.Bool:
-		return encodeBool
+		return s.encodeBool
 	case reflect.String:
-		return encodeString
+		return s.encodeString
 	case reflect.Float64:
-		return encodeFloat64
+		return s.encodeFloat64
 
 	// containers
 	case reflect.Map:
-		return encodeMap
+		return s.encodeMap
 	case reflect.Slice, reflect.Array:
-		return encodeArray
+		return s.encodeArray
 
 	// if we have struct, we did something wrong
 	case reflect.Struct:
-		return encodeUnsupported
+		return s.encodeUnsupported
 	default:
-		return encodeUnsupported
+		return s.encodeUnsupported
 	}
 }
 
-func encodeUnsupported(s *Marshaller, w io.Writer, key string, v reflect.Value) {
-	panic(fmt.Errorf("skip unsupported type at key(%s) value(%#v) kind(%v)", key, v, v.Kind()))
+func (s *Marshaller) write(v string) error {
+	_, err := io.WriteString(s.w, v)
+	return err
 }
 
-func encodeNull(s *Marshaller, w io.Writer, key string, v reflect.Value) {
-	io.WriteString(w, s.Null(key))
+func (s *Marshaller) encodeUnsupported(v reflect.Value) error {
+	return fmt.Errorf("skip unsupported type at key(%s) value(%#v) kind(%v)", s.key, v, v.Kind())
 }
 
-func encodeBool(s *Marshaller, w io.Writer, key string, v reflect.Value) {
-	io.WriteString(w, s.Bool(key, v.Bool()))
+func (s *Marshaller) encodeNull(v reflect.Value) error {
+	return s.write(s.Null(s.key))
 }
 
-func encodeString(s *Marshaller, w io.Writer, key string, v reflect.Value) {
-	io.WriteString(w, s.String(key, v.String()))
+func (s *Marshaller) encodeBool(v reflect.Value) error {
+	return s.write(s.Bool(s.key, v.Bool()))
 }
 
-func encodeFloat64(s *Marshaller, w io.Writer, key string, v reflect.Value) {
-	b, _ := json.Marshal(v.Float())
-	io.WriteString(w, s.Number(key, v.Float(), string(b)))
+func (s *Marshaller) encodeString(v reflect.Value) error {
+	return s.write(s.String(s.key, v.String()))
 }
 
-func encodeArray(s *Marshaller, w io.Writer, key string, v reflect.Value) {
-	io.WriteString(w, s.Array.OpenBracket)
+func (s *Marshaller) encodeFloat64(v reflect.Value) error {
+	b, err := json.Marshal(v.Float())
+	if err != nil {
+		return err
+	}
+	return s.write(s.Number(s.key, v.Float(), string(b)))
+}
 
-	io.WriteString(w, "\n")
+func (s *Marshaller) encodeArray(v reflect.Value) error {
+	s.write(s.Array.OpenBracket)
+	s.write("\n")
+
 	// TODO: increment row
 	// TODO: increment offset
+
+	k := s.key
+	d := s.depth
 
 	n := v.Len()
 	for i := 0; i < n; i++ {
 		if i > 0 {
-			io.WriteString(w, s.Array.Comma)
+			s.write(s.Array.Comma)
 		}
-		kk := key + "[" + strconv.Itoa(i) + "]"
 
-		s.marshal(w, kk, v.Index(i).Interface())
+		s.key = k + "[" + strconv.Itoa(i) + "]"
+		s.depth = d + 1
 
-		io.WriteString(w, "\n")
+		s.marshal(v.Index(i).Interface())
+
+		s.write("\n")
 	}
+
+	s.key = k
+	s.depth = d
 
 	// TODO: increment row
 
-	io.WriteString(w, "\n")
-	io.WriteString(w, s.Array.CloseBracket)
+	s.write("\n")
+	s.write(s.Array.CloseBracket)
 
+	return nil
 }
 
-func encodeMap(s *Marshaller, w io.Writer, key string, v reflect.Value) {
-	io.WriteString(w, s.Map.OpenBracket)
-	io.WriteString(w, "\n")
+func (s *Marshaller) encodeMap(v reflect.Value) error {
+	s.write(s.Map.OpenBracket)
+	s.write("\n")
 
 	// TODO: increment row
 	// TODO: increment offset
@@ -169,27 +191,36 @@ func encodeMap(s *Marshaller, w io.Writer, key string, v reflect.Value) {
 
 	sort.Slice(sv, func(i, j int) bool { return sv[i].ks < sv[j].ks })
 
+	k := s.key
+	d := s.depth
+
 	for i, kv := range sv {
 		if i > 0 {
-			io.WriteString(w, s.Map.Comma)
-			io.WriteString(w, "\n")
+			s.write(s.Map.Comma)
+			s.write("\n")
 		}
 
-		kk := key + "." + kv.ks
+		s.key = k + "." + kv.ks
+		s.depth = d + 1
 
 		// key
-		io.WriteString(w, s.Map.Key(kk, kv.ks))
-		io.WriteString(w, s.Map.Colon)
+		s.write(s.Map.Key(s.key, kv.ks))
+		s.write(s.Map.Colon)
 
 		// value
-		s.marshal(w, kk, kv.v)
+		s.marshal(kv.v)
 
 		// TODO: increment row
 		// TODO: increment offset
 	}
 
+	s.key = k
+	s.depth = d
+
 	// TODO: increment row
 
-	io.WriteString(w, "\n")
-	io.WriteString(w, s.Map.CloseBracket)
+	s.write("\n")
+	s.write(s.Map.CloseBracket)
+
+	return nil
 }
