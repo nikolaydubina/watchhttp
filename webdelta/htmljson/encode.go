@@ -3,6 +3,7 @@ package htmljson
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"reflect"
@@ -26,6 +27,7 @@ type Marshaller struct {
 	depth int
 	key   string
 	row   int
+	err   []error
 }
 
 type ArrayMarshaller struct {
@@ -58,12 +60,13 @@ func (s *Marshaller) MarshalTo(w io.Writer, v any) error {
 	s.depth = 0
 	s.key = "$"
 	s.row = 0
-	return s.marshal(v)
+	s.marshal(v)
+	return errors.Join(s.err...)
 }
 
-func (s *Marshaller) marshal(v any) error { return s.valueEncoder(v)(reflect.ValueOf(v)) }
+func (s *Marshaller) marshal(v any) { s.valueEncoder(v)(reflect.ValueOf(v)) }
 
-type encoderFn func(v reflect.Value) error
+type encoderFn func(v reflect.Value)
 
 func (s *Marshaller) valueEncoder(v any) encoderFn {
 	if v == nil {
@@ -98,34 +101,27 @@ func (s *Marshaller) valueEncoder(v any) encoderFn {
 	}
 }
 
-func (s *Marshaller) write(v string) error {
+func (s *Marshaller) write(v string) {
 	_, err := io.WriteString(s.w, v)
-	return err
+	s.err = append(s.err, err)
 }
 
-func (s *Marshaller) encodeUnsupported(v reflect.Value) error {
-	return fmt.Errorf("skip unsupported type at key(%s) value(%#v) kind(%v)", s.key, v, v.Kind())
+func (s *Marshaller) encodeUnsupported(v reflect.Value) {
+	s.err = append(s.err, fmt.Errorf("skip unsupported type at key(%s) value(%#v) kind(%v)", s.key, v, v.Kind()))
 }
 
-func (s *Marshaller) encodeNull(v reflect.Value) error { return s.write(s.Null(s.key)) }
+func (s *Marshaller) encodeNull(v reflect.Value) { s.write(s.Null(s.key)) }
 
-func (s *Marshaller) encodeBool(v reflect.Value) error {
-	return s.write(s.Bool(s.key, v.Bool()))
+func (s *Marshaller) encodeBool(v reflect.Value) { s.write(s.Bool(s.key, v.Bool())) }
+
+func (s *Marshaller) encodeString(v reflect.Value) { s.write(s.String(s.key, v.String())) }
+
+func (s *Marshaller) encodeFloat64(v reflect.Value) {
+	b, _ := json.Marshal(v.Float())
+	s.write(s.Number(s.key, v.Float(), string(b)))
 }
 
-func (s *Marshaller) encodeString(v reflect.Value) error {
-	return s.write(s.String(s.key, v.String()))
-}
-
-func (s *Marshaller) encodeFloat64(v reflect.Value) error {
-	b, err := json.Marshal(v.Float())
-	if err != nil {
-		return err
-	}
-	return s.write(s.Number(s.key, v.Float(), string(b)))
-}
-
-func (s *Marshaller) encodeArray(v reflect.Value) error {
+func (s *Marshaller) encodeArray(v reflect.Value) {
 	s.write(s.Array.OpenBracket)
 	s.write("\n")
 	s.row++
@@ -153,11 +149,9 @@ func (s *Marshaller) encodeArray(v reflect.Value) error {
 	s.write(s.Array.CloseBracket)
 	s.write("\n")
 	s.row++
-
-	return nil
 }
 
-func (s *Marshaller) encodeMap(v reflect.Value) error {
+func (s *Marshaller) encodeMap(v reflect.Value) {
 	s.write(s.Map.OpenBracket)
 	s.write("\n")
 	s.row++
@@ -213,6 +207,4 @@ func (s *Marshaller) encodeMap(v reflect.Value) error {
 	s.write(s.Map.CloseBracket)
 	s.write("\n")
 	s.row++
-
-	return nil
 }
