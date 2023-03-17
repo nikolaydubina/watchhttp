@@ -21,5 +21,9 @@
         }
     ],
     "tables": [],
-    "ice-cream": null
+    "ice-cream": null,
+    "fruits": [
+        null,
+        null
+    ]
 }

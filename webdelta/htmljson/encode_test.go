@@ -3,7 +3,6 @@ package htmljson_test
 import (
 	_ "embed"
 	"encoding/json"
-	"fmt"
 	"os"
 	"testing"
 
@@ -18,7 +17,6 @@ func TestMarshal(t *testing.T) {
 
 	var v any
 	json.Unmarshal(example, &v)
-	fmt.Printf("%#v\n", v)
 
 	h, err := s.Marshal(v)
 	if err != nil {

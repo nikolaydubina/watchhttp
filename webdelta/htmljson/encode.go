@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"log"
 	"reflect"
 	"sort"
 	"strconv"
@@ -57,20 +56,22 @@ type encoder struct {
 }
 
 func (e *encoder) marshal(key string, v any) {
-	e.reflectValue(key, reflect.ValueOf(v))
+	valueEncoder(v)(e, key, reflect.ValueOf(v))
 }
 
-func (e *encoder) reflectValue(key string, v reflect.Value) {
-	log.Printf("%s: %#v", key, v.Kind().String())
-	valueEncoder(v)(e, key, v)
-}
+type encoderFn func(e *encoder, key string, v reflect.Value)
 
-func valueEncoder(v reflect.Value) encoderFn {
-	if !v.IsValid() {
+func valueEncoder(v any) encoderFn {
+	if v == nil {
+		return encodeNull
+	}
+
+	r := reflect.ValueOf(v)
+	if !r.IsValid() {
 		return encodeUnsupported
 	}
 
-	switch v.Type().Kind() {
+	switch r.Type().Kind() {
 	// scalars
 	case reflect.Bool:
 		return encodeBool
@@ -86,10 +87,6 @@ func valueEncoder(v reflect.Value) encoderFn {
 		return encodeArray
 
 	// null or recursive
-	case reflect.Interface:
-		return encodeInterface
-	case reflect.Pointer:
-		return encodePtr
 
 	// if we have struct, we did something wrong
 	case reflect.Struct:
@@ -99,19 +96,11 @@ func valueEncoder(v reflect.Value) encoderFn {
 	}
 }
 
-type encoderFn func(e *encoder, key string, v reflect.Value)
-
-func encodePtr(e *encoder, key string, v reflect.Value) {
-	if v.IsNil() {
-		e.WriteString("null")
-		return
-	}
-	e.marshal(key, v.Elem())
-}
-
 func encodeUnsupported(e *encoder, key string, v reflect.Value) {
 	panic(fmt.Errorf("skip unsupported type at key(%s) value(%#v) kind(%v)", key, v, v.Kind()))
 }
+
+func encodeNull(e *encoder, key string, v reflect.Value) { e.WriteString(e.s.Null(key)) }
 
 func encodeBool(e *encoder, key string, v reflect.Value) { e.WriteString(e.s.Bool(key, v.Bool())) }
 
@@ -122,13 +111,6 @@ func encodeString(e *encoder, key string, v reflect.Value) {
 func encodeFloat64(e *encoder, key string, v reflect.Value) {
 	b, _ := json.Marshal(v.Float())
 	e.WriteString(e.s.Number(key, v.Float(), string(b)))
-}
-
-func encodeInterface(e *encoder, key string, v reflect.Value) {
-	if v.IsNil() {
-		e.WriteString(e.s.Null(key))
-	}
-	e.marshal(key, v.Elem())
 }
 
 func encodeArray(e *encoder, key string, v reflect.Value) {
@@ -143,7 +125,7 @@ func encodeArray(e *encoder, key string, v reflect.Value) {
 		if i > 0 {
 			e.WriteString(e.s.Array.Comma)
 		}
-		kk := key + "[" + strconv.Itoa(i) + "]."
+		kk := key + "[" + strconv.Itoa(i) + "]"
 
 		e.marshal(kk, v.Index(i).Interface())
 
