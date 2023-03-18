@@ -9,17 +9,17 @@ import (
 	"github.com/nikolaydubina/htmljson"
 )
 
-//go:embed index-json.html
+//go:embed delta_json.html
 var jsonTemplateHTML string
 
 type JSONRenderer struct {
 	Title string
-	data  []byte
+	r     io.Reader
 	num   map[string]float64
 }
 
-func (s *JSONRenderer) ReadBytes(data []byte) *JSONRenderer {
-	s.data = data
+func (s *JSONRenderer) From(r io.Reader) *JSONRenderer {
+	s.r = r
 	return s
 }
 
@@ -29,7 +29,8 @@ func (s *JSONRenderer) WriteTo(w io.Writer) (written int64, err error) {
 	}
 
 	var v any
-	if err := json.Unmarshal(s.data, &v); err != nil {
+	dec := json.NewDecoder(s.r)
+	if err := dec.Decode(&v); err != nil && err != io.EOF {
 		return 0, err
 	}
 
@@ -58,8 +59,8 @@ func (s *JSONRenderer) WriteTo(w io.Writer) (written int64, err error) {
 	}
 
 	htmlPage := jsonTemplateHTML
-	htmlPage = strings.ReplaceAll(htmlPage, `{{.HTMLJSON}}`, string(r.Marshal(v)))
 	htmlPage = strings.ReplaceAll(htmlPage, `{{.Title}}`, s.Title)
+	htmlPage = strings.ReplaceAll(htmlPage, `{{.HTMLJSON}}`, string(r.Marshal(v)))
 
 	n, err := io.WriteString(w, htmlPage)
 	return int64(n), err

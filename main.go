@@ -128,12 +128,8 @@ type JSONHTMLDeltaHandler struct {
 
 func (s *JSONHTMLDeltaHandler) WriteTo(w io.Writer) (written int64, err error) {
 	b := &bytes.Buffer{}
-	b.Grow(1000)
 	s.provider.WriteTo(b)
-	if b.Len() == 0 {
-		return 0, nil
-	}
-	return s.renderer.ReadBytes(b.Bytes()).WriteTo(w)
+	return s.renderer.From(b).WriteTo(w)
 }
 
 // CmdRunner runs command on interval and stores last STDOUT in buffer
