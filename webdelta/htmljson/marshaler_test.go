@@ -33,7 +33,6 @@ func TestMarshaler_JSONPath(t *testing.T) {
 
 	h := htmljson.DefaultMarshaler.Marshal(v)
 
-	os.WriteFile("testdata/example.out.html", h, 0666)
 	if exampleHTML != string(h) {
 		t.Errorf("wrong output: %s", string(h))
 	}

@@ -9,10 +9,13 @@ import (
 	"strings"
 )
 
-// Marshaler convert struct as JSON represented into HTML.
+// Marshaler converts JSON stored as Go `any` object represented into HTML.
 // Visually HTML is similar to pretty printed JSON with indentation.
-// This facilitates CSS styling, CSS animations, and JavaScript event hooks.
-// Rendering is customized by providing renderers for specific elements.
+// Rendering is customized by providing renderers for specific JSON elements.
+// This facilitates CSS styling, CSS animations, and JavaScript events.
+// JSON element renderers receive JSON path and value of element.
+// Should be used only for types: bool, float64, string, []any, map[string]any, nil.
+// You can get allowed input easily with json.Unmarshal to any.
 type Marshaler struct {
 	Null   func(key string) string
 	Bool   func(key string, v bool) string
@@ -42,17 +45,14 @@ type MapMarshaler struct {
 	Key          func(key string, v string) string
 }
 
-// Marshal convert struct as JSON represented into HTML.
-// Passes JSON path to render specific JSON elements.
-// Inspired by encoding/json.
-// Should be used only for types: bool, float64, string, []any, map[string]any, nil.
-// You can get allowed input easily with json.Unmarshal to any.
+// Marshaler converts JSON stored as Go `any` object represented into HTML.
 func (s *Marshaler) Marshal(v any) []byte {
 	b := bytes.Buffer{}
 	s.MarshalTo(&b, v)
 	return b.Bytes()
 }
 
+// MarshalTo converts JSON stored as Go `any` object represented into HTML.
 func (s *Marshaler) MarshalTo(w io.Writer, v any) error {
 	s.depth = 0
 	s.key = "$"
