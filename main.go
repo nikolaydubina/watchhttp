@@ -2,8 +2,10 @@ package main
 
 import (
 	"bytes"
+	_ "embed"
 	"flag"
 	"fmt"
+	"html"
 	"io"
 	"log"
 	"net/http"
@@ -14,7 +16,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/nikolaydubina/watchhttp/internal/args"
+	"github.com/nikolaydubina/watchhttp/args"
+	"github.com/nikolaydubina/watchhttp/htmldelta"
 )
 
 const doc string = `
@@ -45,12 +48,14 @@ func main() {
 		port            int           = 9000
 		interval        time.Duration = time.Second
 		contentTypeJSON bool          = false
+		isDelta         bool          = false
 	)
 
 	if hasFlags {
 		flag.IntVar(&port, "p", port, "port")
 		flag.DurationVar(&interval, "t", interval, `interval to execute command (units: ns, us, µs, ms, s, m, h, d, w, y)`)
 		flag.BoolVar(&contentTypeJSON, "json", contentTypeJSON, "set Content-Type: application/json")
+		flag.BoolVar(&isDelta, "d", isDelta, "show animated HTML delta difference (only JSON)")
 		flag.Parse()
 	}
 
@@ -60,20 +65,34 @@ func main() {
 
 	log.Printf("serving at port=%d with interval=%v latest STDOUT of command: %v\n", port, interval, strings.Join(cmdargs, " "))
 
-	runner := CmdRunner{
+	cmdrunner := &CmdRunner{
 		ticker:     time.NewTicker(interval),
 		lastStdOut: bytes.NewBuffer(nil),
 		mtx:        &sync.RWMutex{},
 		cmd:        cmdargs,
 	}
-	go runner.Run()
+	go cmdrunner.Run()
+
+	var runner io.WriterTo = cmdrunner
+
+	if isDelta && contentTypeJSON {
+		runner = &JSONHTMLDeltaHandler{
+			provider: cmdrunner,
+			renderer: &htmldelta.JSONRenderer{
+				Title: html.EscapeString(strings.Join(cmdargs, " ")),
+			},
+		}
+	}
 
 	runnerHandler := ForwardHandler{
-		Provider: &runner,
+		Provider: runner,
 		Interval: interval,
 	}
-	if contentTypeJSON {
+	if isDelta {
+		runnerHandler.ContentType = "text/html; charset=utf-8"
+	} else if contentTypeJSON {
 		runnerHandler.ContentType = "application/json"
+
 	}
 
 	http.HandleFunc("/", runnerHandler.handleRequest)
@@ -99,12 +118,36 @@ func (s ForwardHandler) handleRequest(w http.ResponseWriter, req *http.Request) 
 	}
 }
 
+// JSONHTMLDeltaHandler will pass data from raw JSON provider to HTML JSON delta renderer and return result
+type JSONHTMLDeltaHandler struct {
+	renderer *htmldelta.JSONRenderer
+	provider interface {
+		WriteTo(w io.Writer) (int64, error)
+	}
+}
+
+func (s *JSONHTMLDeltaHandler) WriteTo(w io.Writer) (written int64, err error) {
+	b := &bytes.Buffer{}
+	b.Grow(1000)
+	s.provider.WriteTo(b)
+	if b.Len() == 0 {
+		return 0, nil
+	}
+	return s.renderer.ReadBytes(b.Bytes()).WriteTo(w)
+}
+
 // CmdRunner runs command on interval and stores last STDOUT in buffer
 type CmdRunner struct {
 	ticker     *time.Ticker
 	cmd        []string
 	lastStdOut *bytes.Buffer
 	mtx        *sync.RWMutex
+}
+
+func (s *CmdRunner) LastStdOutBytes() []byte {
+	s.mtx.RLock()
+	defer s.mtx.RUnlock()
+	return s.lastStdOut.Bytes()
 }
 
 func (s *CmdRunner) WriteTo(w io.Writer) (written int64, err error) {

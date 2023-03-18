@@ -7,12 +7,24 @@
 > Run command periodically and expose latest STDOUT as HTTP endpoint
 
 * <200LOC
-* no dependencies
+* pure Go
 * automatic browser refresh via `Refresh` header
+* animations
+* no dependencies
+* no Javascript
+* no WebAssembly
 
 ```bash
 go install github.com/nikolaydubina/watchhttp@latest
 ```
+
+### Live animated delta of JSON from transformed cURL
+
+```bash
+watchhttp -t 5s -json -d -- /bin/sh -c 'curl "https://api.open-meteo.com/v1/forecast?latitude=52.52&longitude=13.41&current_weather=true&hourly=temperature_2m,relativehumidity_2m,windspeed_10m" | jq "del(.hourly)"'
+```
+
+![](./doc/example-delta-3.mov)
 
 ### Fetch and transform periodically with `curl` and `jq`
 
@@ -50,7 +62,7 @@ $ curl localhost:9000/
 watchhttp -t 2s -json -- /bin/sh -c "curl --location 'api.coincap.io/v2/rates/bitcoin' | jq"
 ```
 
-![](./img/example-btc-static.png)
+![](./doc/example-btc-static.png)
 
 ### Live graph of Kubernetes resources with `kubectl` and `graphviz`
 
@@ -62,7 +74,7 @@ go install github.com/nikolaydubina/jsonl-graph@latest
 watchhttp -t 3s -p 9000 -- /bin/sh -c "kubectl get pods -o json | jq '.items[] | {to: (.kind + \":\" + .metadata.name), from: (.metadata.ownerReferences[].kind + \":\" + .metadata.ownerReferences[].name)}' | jsonl-graph | dot -Tsvg"
 ```
 
-![](./img/example-k8s-graph.png)
+![](./doc/example-k8s-graph.png)
 
 ### Live status of Kubernetes resource with `kubectl`
 
@@ -70,7 +82,7 @@ watchhttp -t 3s -p 9000 -- /bin/sh -c "kubectl get pods -o json | jq '.items[] |
 watchhttp -t 3s -p 9000 -- kubectl describe deployment hello-minikube
 ```
 
-![](./img/example-k8s-describe-static.png)
+![](./doc/example-k8s-describe-static.png)
 
 ### Live system metrics with `vmstat`
 
@@ -127,10 +139,13 @@ Mar 12 17:44:54 Nikolays-MacBook-Pro syslogd[532]: ASL Sender Statistics
 
 ---
 
-### Appendix A: Existing Tools
+### Appendix A: Related Work
 
 - as of 2023-03-12, [awesome-go](http://github.com/avelino/awesome-go) does not mention any tools that can do this
 - `netcat` can not do this
+- [mantyr/jsonhtml](https://github.com/mantyr/jsonhtml) is experimental JSON to HTML renderer, assignment, no go mod 
+- [shovon/json-pretty-printer](https://github.com/shovon/json-pretty-printer) is experimental JSON to HTML renderer, no reflect, direct JSON string parsing, assignment, no go mod
+- [https://github.com/marchoy/pretty-printer](https://github.com/marchoy/pretty-printer) is experimental JSON prettifier to HTML renderer, adds syntax highlighting, no reflect, direct JSON string parsing, no tests, no go mod
 
 ### Appendix B: Alternative with file server + bash
 
