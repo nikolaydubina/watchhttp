@@ -76,7 +76,7 @@ func main() {
 	var runner io.WriterTo = cmdrunner
 
 	if isDelta && contentTypeJSON {
-		runner = &JSONHTMLDeltaHandler{
+		runner = &JSONHTMLRenderBridge{
 			provider: cmdrunner,
 			renderer: &htmldelta.JSONRenderer{
 				Title: html.EscapeString(strings.Join(cmdargs, " ")),
@@ -118,15 +118,15 @@ func (s ForwardHandler) handleRequest(w http.ResponseWriter, req *http.Request) 
 	}
 }
 
-// JSONHTMLDeltaHandler will pass data from raw JSON provider to HTML JSON delta renderer and return result
-type JSONHTMLDeltaHandler struct {
+// JSONHTMLRenderBridge will pass data from raw JSON provider to HTML JSON delta renderer and write output to destination
+type JSONHTMLRenderBridge struct {
 	renderer *htmldelta.JSONRenderer
 	provider interface {
 		WriteTo(w io.Writer) (int64, error)
 	}
 }
 
-func (s *JSONHTMLDeltaHandler) WriteTo(w io.Writer) (written int64, err error) {
+func (s *JSONHTMLRenderBridge) WriteTo(w io.Writer) (written int64, err error) {
 	b := &bytes.Buffer{}
 	s.provider.WriteTo(b)
 	return s.renderer.From(b).WriteTo(w)
