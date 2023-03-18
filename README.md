@@ -11,7 +11,7 @@
 * pure Go
 * automatic browser refresh via `Refresh` header
 * animations
-* no dependencies
+* minimal dependencies
 * no Javascript
 * no WebAssembly
 
