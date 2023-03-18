@@ -24,7 +24,7 @@ go install github.com/nikolaydubina/watchhttp@latest
 watchhttp -t 5s -json -d -- /bin/sh -c 'curl "https://api.open-meteo.com/v1/forecast?latitude=52.52&longitude=13.41&current_weather=true&hourly=temperature_2m,relativehumidity_2m,windspeed_10m" | jq "del(.hourly)"'
 ```
 
-![](./doc/example-delta-2.mov)
+https://user-images.githubusercontent.com/2933061/226087511-471a203a-f3b7-4e1d-b8a4-b0c6e46e5fa1.mov
 
 ### Fetch and transform periodically with `curl` and `jq`
 
