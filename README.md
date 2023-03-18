@@ -9,6 +9,9 @@
 * <200LOC
 * no dependencies
 * automatic browser refresh via `Refresh` header
+* no Javascript
+* pure Go
+* animations
 
 ```bash
 go install github.com/nikolaydubina/watchhttp@latest
