@@ -10,17 +10,18 @@ import (
 )
 
 //go:embed testdata/example.json
-var example []byte
+var exampleJSON []byte
 
-func TestMarshal(t *testing.T) {
-	s := htmljson.DefaultMarshaller
+//go:embed testdata/example.html
+var exampleHTML string
 
+func TestDefaultMarshaller(t *testing.T) {
 	var v any
-	json.Unmarshal(example, &v)
+	json.Unmarshal(exampleJSON, &v)
 
-	h := s.Marshal(v)
-
-	f, _ := os.Create("testdata/example.out.html")
-	defer f.Close()
-	f.Write(h)
+	h := htmljson.DefaultMarshaller.Marshal(v)
+	os.WriteFile("testdata/example.out.html", h, 0666)
+	if exampleHTML != string(h) {
+		t.Errorf("wrong output: %s", string(h))
+	}
 }

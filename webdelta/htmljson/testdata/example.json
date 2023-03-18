@@ -25,5 +25,14 @@
     "fruits": [
         null,
         null
+    ],
+    "box-sizes": [
+        10,
+        11,
+        12
+    ],
+    "box-colors": [
+        "red",
+        "green"
     ]
 }
