@@ -67,89 +67,102 @@ func main() {
 
 	cmdrunner := &CmdRunner{
 		ticker:     time.NewTicker(interval),
-		lastStdOut: bytes.NewBuffer(nil),
+		lastStdout: bytes.NewBuffer(nil),
 		mtx:        &sync.RWMutex{},
 		cmd:        cmdargs,
 	}
 	go cmdrunner.Run()
 
-	var runner io.WriterTo = cmdrunner
+	h := ForwardHandler{
+		provider: cmdrunner,
+		interval: interval,
+	}
 
 	if isDelta && contentTypeJSON {
-		runner = &JSONHTMLRenderBridge{
+		h.provider = &JSONHTMLRenderBridge{
 			provider: cmdrunner,
-			renderer: &htmldelta.JSONRenderer{
-				Title: html.EscapeString(strings.Join(cmdargs, " ")),
-			},
+			renderer: htmldelta.NewJSONRenderer(html.EscapeString(strings.Join(cmdargs, " "))),
+			b:        &bytes.Buffer{},
+			mtx:      &sync.Mutex{},
 		}
 	}
-
-	runnerHandler := ForwardHandler{
-		Provider: runner,
-		Interval: interval,
-	}
 	if isDelta {
-		runnerHandler.ContentType = "text/html; charset=utf-8"
+		h.contentType = "text/html; charset=utf-8"
 	} else if contentTypeJSON {
-		runnerHandler.ContentType = "application/json"
-
+		h.contentType = "application/json"
 	}
 
-	http.HandleFunc("/", runnerHandler.handleRequest)
+	http.HandleFunc("/", h.handleRequest)
 	http.ListenAndServe(":"+strconv.Itoa(port), nil)
 }
 
 // ForwardHandler will call Payload from wrapped class and serve it in response
 type ForwardHandler struct {
-	ContentType string
-	Interval    time.Duration
-	Provider    interface {
-		WriteTo(w io.Writer) (int64, error)
+	contentType string
+	interval    time.Duration
+	provider    interface {
+		io.WriterTo
+		LastUpdatedAt() time.Time
 	}
 }
 
 func (s ForwardHandler) handleRequest(w http.ResponseWriter, req *http.Request) {
-	if s.ContentType != "" {
-		w.Header().Set("Content-Type", s.ContentType)
+	if s.contentType != "" {
+		w.Header().Set("Content-Type", s.contentType)
 	}
-	w.Header().Set("Refresh", fmt.Sprintf("%.0f", s.Interval.Seconds()))
-	if _, err := s.Provider.WriteTo(w); err != nil {
-		log.Fatal(err)
+	w.Header().Set("Last-Modified", s.provider.LastUpdatedAt().UTC().Format(http.TimeFormat))
+	w.Header().Set("Refresh", fmt.Sprintf("%.0f", s.interval.Seconds()))
+	if _, err := s.provider.WriteTo(w); err != nil {
+		log.Printf("error: %s", err)
 	}
 }
 
-// JSONHTMLRenderBridge will pass data from raw JSON provider to HTML JSON delta renderer and write output to destination
+// JSONHTMLRenderBridge passes data from raw JSON provider to HTML JSON delta renderer and write output to destination.
+// It caches rendered delta HTML JSON because delta HTML JSON renderer is not idempotent.
 type JSONHTMLRenderBridge struct {
 	renderer *htmldelta.JSONRenderer
-	provider interface {
-		WriteTo(w io.Writer) (int64, error)
-	}
+	provider *CmdRunner
+	b        *bytes.Buffer
+	ts       time.Time
+	mtx      *sync.Mutex
 }
 
 func (s *JSONHTMLRenderBridge) WriteTo(w io.Writer) (written int64, err error) {
-	b := &bytes.Buffer{}
-	s.provider.WriteTo(b)
-	return s.renderer.From(b).WriteTo(w)
+	s.mtx.Lock()
+	defer s.mtx.Unlock()
+	if ts := s.provider.LastUpdatedAt(); ts.After(s.ts) {
+		s.ts = ts
+		s.b.Reset()
+		s.renderer.From(bytes.NewReader(s.provider.LastStdout())).WriteTo(s.b)
+	}
+	// to not drain buffer accessing its bytes
+	return io.Copy(w, bytes.NewReader(s.b.Bytes()))
 }
+
+func (s *JSONHTMLRenderBridge) LastUpdatedAt() time.Time { return s.ts }
 
 // CmdRunner runs command on interval and stores last STDOUT in buffer
 type CmdRunner struct {
 	ticker     *time.Ticker
 	cmd        []string
-	lastStdOut *bytes.Buffer
+	lastStdout *bytes.Buffer
+	ts         time.Time
 	mtx        *sync.RWMutex
 }
 
-func (s *CmdRunner) LastStdOutBytes() []byte {
+func (s *CmdRunner) LastUpdatedAt() time.Time { return s.ts }
+
+func (s *CmdRunner) LastStdout() []byte {
 	s.mtx.RLock()
 	defer s.mtx.RUnlock()
-	return s.lastStdOut.Bytes()
+	return s.lastStdout.Bytes()
 }
 
 func (s *CmdRunner) WriteTo(w io.Writer) (written int64, err error) {
 	s.mtx.RLock()
 	defer s.mtx.RUnlock()
-	return io.Copy(w, bytes.NewReader(s.lastStdOut.Bytes()))
+	// to not drain buffer accessing its bytes
+	return io.Copy(w, bytes.NewReader(s.lastStdout.Bytes()))
 }
 
 func (s *CmdRunner) Run() {
@@ -167,9 +180,10 @@ func (s *CmdRunner) Run() {
 
 		s.mtx.Lock()
 
-		s.lastStdOut.Reset()
+		s.lastStdout.Reset()
 
-		if _, err := io.Copy(s.lastStdOut, stdout); err != nil {
+		s.ts = time.Now()
+		if _, err := io.Copy(s.lastStdout, stdout); err != nil {
 			log.Fatal(err)
 		}
 

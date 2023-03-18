@@ -6,7 +6,7 @@
 
 > Run command periodically and expose latest STDOUT as HTTP endpoint
 
-* <200LOC
+* 300LOC
 * pure Go
 * automatic browser refresh via `Refresh` header
 * animations

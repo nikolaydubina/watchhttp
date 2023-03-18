@@ -1,8 +1,4 @@
-github.com/nikolaydubina/htmljson v0.0.0-20230318042354-e2849936005b h1:OVfsL4tLQRFsekRbwBkQpV02DxJ+Vd0wb8U37rpdD4g=
-github.com/nikolaydubina/htmljson v0.0.0-20230318042354-e2849936005b/go.mod h1:7SfWPbHB2BLKb7O01BiVwjiFjHe9J8R3LMnYlh4/WzU=
-github.com/nikolaydubina/htmljson v1.0.0 h1:5+4R+GmlF6rm6i+EB/WbtQlZMGryR5MPB4jCA+ERdms=
-github.com/nikolaydubina/htmljson v1.0.0/go.mod h1:7SfWPbHB2BLKb7O01BiVwjiFjHe9J8R3LMnYlh4/WzU=
-golang.org/x/exp v0.0.0-20230310171629-522b1b587ee0 h1:LGJsf5LRplCck6jUCH3dBL2dmycNruWNF5xugkSlfXw=
-golang.org/x/exp v0.0.0-20230310171629-522b1b587ee0/go.mod h1:CxIveKay+FTh1D0yPZemJVgC/95VzuuOLq5Qi4xnoYc=
+github.com/nikolaydubina/htmljson v1.1.0 h1:x46gPHNcR1XEFb9anZ4y5nwyJLWwilEQQYSwoUozI9k=
+github.com/nikolaydubina/htmljson v1.1.0/go.mod h1:7SfWPbHB2BLKb7O01BiVwjiFjHe9J8R3LMnYlh4/WzU=
 golang.org/x/exp v0.0.0-20230315142452-642cacee5cc0 h1:pVgRXcIictcr+lBQIFeiwuwtDIs4eL21OuM9nyAADmo=
 golang.org/x/exp v0.0.0-20230315142452-642cacee5cc0/go.mod h1:CxIveKay+FTh1D0yPZemJVgC/95VzuuOLq5Qi4xnoYc=
