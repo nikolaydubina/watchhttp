@@ -15,11 +15,11 @@ var exampleJSON []byte
 //go:embed testdata/example.html
 var exampleHTML string
 
-func TestDefaultMarshaller(t *testing.T) {
+func TestDefaultMarshaler(t *testing.T) {
 	var v any
 	json.Unmarshal(exampleJSON, &v)
 
-	h := htmljson.DefaultMarshaller.Marshal(v)
+	h := htmljson.DefaultMarshaler.Marshal(v)
 
 	os.WriteFile("testdata/example.out.html", h, 0666)
 	if exampleHTML != string(h) {
@@ -27,11 +27,11 @@ func TestDefaultMarshaller(t *testing.T) {
 	}
 }
 
-func TestMarshaller_JSONPath(t *testing.T) {
+func TestMarshaler_JSONPath(t *testing.T) {
 	var v any
 	json.Unmarshal(exampleJSON, &v)
 
-	h := htmljson.DefaultMarshaller.Marshal(v)
+	h := htmljson.DefaultMarshaler.Marshal(v)
 
 	os.WriteFile("testdata/example.out.html", h, 0666)
 	if exampleHTML != string(h) {

@@ -20,13 +20,13 @@ func NumberHTML(k string, v float64, s string) string {
 	return `<div class="json-value json-number">` + s + `</div>`
 }
 
-var DefaultArrayHTML = ArrayMarshaller{
+var DefaultArrayHTML = ArrayMarshaler{
 	OpenBracket:  `<div class="json-lang">[</div>`,
 	CloseBracket: `<div class="json-lang">]</div>`,
 	Comma:        `<div class="json-lang">,</div>`,
 }
 
-var DefaultMapHTML = MapMarshaller{
+var DefaultMapHTML = MapMarshaler{
 	OpenBracket:  `<div class="json-lang">{</div>`,
 	CloseBracket: `<div class="json-lang">}</div>`,
 	Comma:        `<div class="json-lang">,</div>`,
@@ -43,8 +43,8 @@ func (s DefaultRowHTML) Marshal(v string, depth int) string {
 	return `<div class="json-container-row">` + p + v + `</div>`
 }
 
-// DefaultMarshaller adds basic HTML div classes for further styling.
-var DefaultMarshaller = Marshaller{
+// DefaultMarshaler adds basic HTML div classes for further styling.
+var DefaultMarshaler = Marshaler{
 	Null:   NullHTML,
 	Bool:   BoolHTML,
 	String: StringHTML,

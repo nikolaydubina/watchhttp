@@ -26,7 +26,7 @@ func (s Renderer) WriteTo(w io.Writer) (written int64, err error) {
 		return 0, err
 	}
 
-	r := htmljson.DefaultMarshaller
+	r := htmljson.DefaultMarshaler
 	jsonHTML := r.Marshal(v)
 	b.WriteString(strings.ReplaceAll(page, `{{.JSONText}}`, string(jsonHTML)))
 

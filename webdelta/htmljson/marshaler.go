@@ -9,17 +9,17 @@ import (
 	"strings"
 )
 
-// Marshaller convert struct as JSON represented into HTML.
+// Marshaler convert struct as JSON represented into HTML.
 // Visually HTML is similar to pretty printed JSON with indentation.
 // This facilitates CSS styling, CSS animations, and JavaScript event hooks.
 // Rendering is customized by providing renderers for specific elements.
-type Marshaller struct {
+type Marshaler struct {
 	Null   func(key string) string
 	Bool   func(key string, v bool) string
 	String func(key string, v string) string
 	Number func(key string, v float64, s string) string
-	Array  ArrayMarshaller
-	Map    MapMarshaller
+	Array  ArrayMarshaler
+	Map    MapMarshaler
 	Row    func(s string, padding int) string
 
 	*rowWriter
@@ -28,13 +28,13 @@ type Marshaller struct {
 	err   []error
 }
 
-type ArrayMarshaller struct {
+type ArrayMarshaler struct {
 	OpenBracket  string
 	CloseBracket string
 	Comma        string
 }
 
-type MapMarshaller struct {
+type MapMarshaler struct {
 	OpenBracket  string
 	CloseBracket string
 	Comma        string
@@ -47,13 +47,13 @@ type MapMarshaller struct {
 // Inspired by encoding/json.
 // Should be used only for types: bool, float64, string, []any, map[string]any, nil.
 // You can get allowed input easily with json.Unmarshal to any.
-func (s *Marshaller) Marshal(v any) []byte {
+func (s *Marshaler) Marshal(v any) []byte {
 	b := bytes.Buffer{}
 	s.MarshalTo(&b, v)
 	return b.Bytes()
 }
 
-func (s *Marshaller) MarshalTo(w io.Writer, v any) error {
+func (s *Marshaler) MarshalTo(w io.Writer, v any) error {
 	s.depth = 0
 	s.key = "$"
 	s.rowWriter = &rowWriter{
@@ -67,7 +67,7 @@ func (s *Marshaller) MarshalTo(w io.Writer, v any) error {
 	return errors.Join(s.err...)
 }
 
-func (s *Marshaller) marshal(v any) {
+func (s *Marshaler) marshal(v any) {
 	if v == nil {
 		s.encodeNull()
 	}
@@ -87,17 +87,17 @@ func (s *Marshaller) marshal(v any) {
 	}
 }
 
-func (s *Marshaller) encodeNull() { s.write(s.Null(s.key)) }
+func (s *Marshaler) encodeNull() { s.write(s.Null(s.key)) }
 
-func (s *Marshaller) encodeBool(v bool) { s.write(s.Bool(s.key, v)) }
+func (s *Marshaler) encodeBool(v bool) { s.write(s.Bool(s.key, v)) }
 
-func (s *Marshaller) encodeString(v string) { s.write(s.String(s.key, v)) }
+func (s *Marshaler) encodeString(v string) { s.write(s.String(s.key, v)) }
 
-func (s *Marshaller) encodeFloat64(v float64) {
+func (s *Marshaler) encodeFloat64(v float64) {
 	s.write(s.Number(s.key, v, strconv.FormatFloat(v, 'f', -1, 64)))
 }
 
-func (s *Marshaller) encodeArray(v []any) {
+func (s *Marshaler) encodeArray(v []any) {
 	s.write(s.Array.OpenBracket)
 
 	if len(v) == 0 {
@@ -107,6 +107,7 @@ func (s *Marshaller) encodeArray(v []any) {
 
 	// write array
 	k, d := s.key, s.depth
+	defer func() { s.key, s.depth = k, d }()
 	s.flush(d)
 
 	s.depth = d + 1
@@ -124,11 +125,9 @@ func (s *Marshaller) encodeArray(v []any) {
 
 	s.flush(s.depth)
 	s.write(s.Array.CloseBracket)
-
-	s.key, s.depth = k, d
 }
 
-func (s *Marshaller) encodeMap(v map[string]any) {
+func (s *Marshaler) encodeMap(v map[string]any) {
 	s.write(s.Map.OpenBracket)
 
 	if len(v) == 0 {
@@ -149,6 +148,7 @@ func (s *Marshaller) encodeMap(v map[string]any) {
 
 	// write map
 	k, d := s.key, s.depth
+	defer func() { s.key, s.depth = k, d }()
 
 	s.flush(d)
 
@@ -171,6 +171,4 @@ func (s *Marshaller) encodeMap(v map[string]any) {
 
 	s.flush(s.depth)
 	s.write(s.Map.CloseBracket)
-
-	s.key, s.depth = k, d
 }
