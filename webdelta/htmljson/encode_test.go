@@ -26,3 +26,15 @@ func TestDefaultMarshaller(t *testing.T) {
 		t.Errorf("wrong output: %s", string(h))
 	}
 }
+
+func TestMarshaller_JSONPath(t *testing.T) {
+	var v any
+	json.Unmarshal(exampleJSON, &v)
+
+	h := htmljson.DefaultMarshaller.Marshal(v)
+
+	os.WriteFile("testdata/example.out.html", h, 0666)
+	if exampleHTML != string(h) {
+		t.Errorf("wrong output: %s", string(h))
+	}
+}

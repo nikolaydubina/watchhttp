@@ -22,7 +22,7 @@ type Marshaller struct {
 	Map    MapMarshaller
 	Row    func(s string, padding int) string
 
-	*RowWriter
+	*rowWriter
 	depth int
 	key   string
 	err   []error
@@ -56,14 +56,14 @@ func (s *Marshaller) Marshal(v any) []byte {
 func (s *Marshaller) MarshalTo(w io.Writer, v any) error {
 	s.depth = 0
 	s.key = "$"
-	s.RowWriter = &RowWriter{
+	s.rowWriter = &rowWriter{
 		b:   strings.Builder{},
 		w:   w,
 		Row: s.Row,
 	}
 	s.marshal(v)
 	s.flush(s.depth)
-	s.err = append(s.err, s.RowWriter.err...)
+	s.err = append(s.err, s.rowWriter.err...)
 	return errors.Join(s.err...)
 }
 
