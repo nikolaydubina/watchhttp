@@ -4,10 +4,21 @@
 <title>test</title>
 <style> 
 
+/* Colors from Apple https://developer.apple.com/design/human-interface-guidelines/foundations/color
+*/
 :root {
-  --text-grey-l0: #737475;
-  --text-grey-l1: #7f8181;;
-  --text-grey-l2: #d7d7d7;;
+  --text-grey-d-0: rgb(28,28,30);
+  --text-grey-d-1: rgb(44,44,46);
+  --text-grey-d-2: rgb(58,58,60);
+  --text-grey-d-3: rgb(72,72,74);
+  --text-grey-d-4: rgb(99,99,102);
+  --text-grey-d-5: rgb(142,142,147);
+  --text-grey-l-0: rgb(142,142,147);
+  --text-grey-l-1: rgb(174,174,178);
+  --text-grey-l-2: rgb(199,199,204);
+  --text-grey-l-3: rgb(209,209,214);
+  --text-grey-l-4: rgb(229,229,234);
+  --text-grey-l-5: rgb(242,242,247);
 }
 
 .json-lang, .json-key, .json-value {
@@ -16,11 +27,19 @@
 }
 
 .json-lang {
-  color:var(--text-grey-l2);
+  color:var(--text-grey-l-2);
 }
 
 .json-key {
-  color:var(--text-grey-l1);
+  color:var(--text-grey-d-4);
+}
+
+.json-bool, .json-value  {
+  color:var(--text-grey-d-1);
+}
+
+.json-null {
+  color:var(--text-grey-l-2);
 }
 
 .json-container-row {
@@ -36,7 +55,7 @@
 </head>
 <body>
 
-{{.JSONText}}
+{{.HTMLJSON}}
 
 </div>
 </body>

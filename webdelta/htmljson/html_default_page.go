@@ -8,7 +8,7 @@ import (
 )
 
 //go:embed html_default_page.html
-var htmlPageDefault string
+var DefaultHTMLPageTemplate string
 
 func MarshalHTML(v any) []byte {
 	b := bytes.Buffer{}
@@ -21,7 +21,7 @@ func MarshalHTMLTo(w io.Writer, v any) (written int64, err error) {
 	b.Grow(1000)
 
 	jsonHTML := DefaultMarshaler.Marshal(v)
-	b.WriteString(strings.ReplaceAll(htmlPageDefault, `{{.JSONText}}`, string(jsonHTML)))
+	b.WriteString(strings.ReplaceAll(DefaultHTMLPageTemplate, `{{.HTMLJSON}}`, string(jsonHTML)))
 
 	n, err := w.Write(b.Bytes())
 	return int64(n), err
