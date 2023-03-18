@@ -68,52 +68,38 @@ func (s *Marshaller) MarshalTo(w io.Writer, v any) error {
 	return errors.Join(s.err...)
 }
 
-func (s *Marshaller) marshal(v any) { s.valueEncoder(v)(v) }
-
-type encoderFn func(v any)
-
-func (s *Marshaller) valueEncoder(v any) encoderFn {
+func (s *Marshaller) marshal(v any) {
 	if v == nil {
-		return s.encodeNull
+		s.encodeNull()
 	}
-
-	switch v.(type) {
-	// scalars
+	switch q := v.(type) {
 	case bool:
-		return s.encodeBool
+		s.encodeBool(q)
 	case string:
-		return s.encodeString
+		s.encodeString(q)
 	case float64:
-		return s.encodeFloat64
-
-	// containers
+		s.encodeFloat64(q)
 	case map[string]any:
-		return s.encodeMap
+		s.encodeMap(q)
 	case []any:
-		return s.encodeArray
-
+		s.encodeArray(q)
 	default:
-		return s.encodeUnsupported
+		s.err = append(s.err, errors.New("skip unsupported type at key("+s.key+")"))
 	}
 }
 
-func (s *Marshaller) encodeUnsupported(v any) {
-	s.err = append(s.err, errors.New("skip unsupported type at key("+s.key+")"))
+func (s *Marshaller) encodeNull() { s.write(s.Null(s.key)) }
+
+func (s *Marshaller) encodeBool(v bool) { s.write(s.Bool(s.key, v)) }
+
+func (s *Marshaller) encodeString(v string) { s.write(s.String(s.key, v)) }
+
+func (s *Marshaller) encodeFloat64(v float64) {
+	s.write(s.Number(s.key, v, strconv.FormatFloat(v, 'f', -1, 64)))
 }
 
-func (s *Marshaller) encodeNull(v any) { s.write(s.Null(s.key)) }
-
-func (s *Marshaller) encodeBool(v any) { s.write(s.Bool(s.key, v.(bool))) }
-
-func (s *Marshaller) encodeString(v any) { s.write(s.String(s.key, v.(string))) }
-
-func (s *Marshaller) encodeFloat64(v any) {
-	s.write(s.Number(s.key, v.(float64), strconv.FormatFloat(v.(float64), 'f', -1, 64)))
-}
-
-func (s *Marshaller) encodeArray(v any) {
-	a := v.([]any)
-	n := len(a)
+func (s *Marshaller) encodeArray(v []any) {
+	n := len(v)
 
 	s.write(s.Array.OpenBracket)
 
@@ -136,7 +122,7 @@ func (s *Marshaller) encodeArray(v any) {
 		s.key = k + "[" + strconv.Itoa(i) + "]"
 
 		s.write("") // fake virtual key, to apply same offset logic as JSON Map
-		s.marshal(a[i])
+		s.marshal(v[i])
 	}
 
 	s.flush(s.depth)
@@ -145,36 +131,29 @@ func (s *Marshaller) encodeArray(v any) {
 	s.key, s.depth = k, d
 }
 
-func (s *Marshaller) encodeMap(v any) {
-	type mapKV struct {
-		ks string
-		v  any
-	}
-
-	m := v.(map[string]any)
-
-	// extract and sort the keys
-	sv := make([]mapKV, 0, len(m))
-	for k, v := range m {
-		sv = append(sv, mapKV{
-			ks: k,
-			v:  v,
-		})
-	}
-
+func (s *Marshaller) encodeMap(v map[string]any) {
 	s.write(s.Map.OpenBracket)
 
-	if len(sv) == 0 {
+	if len(v) == 0 {
 		s.write(s.Map.CloseBracket)
 		return
 	}
+
+	// extract and sort the keys
+	type kv struct {
+		k string
+		v any
+	}
+	sv := make([]kv, 0, len(v))
+	for k, v := range v {
+		sv = append(sv, kv{k: k, v: v})
+	}
+	sort.Slice(sv, func(i, j int) bool { return sv[i].k < sv[j].k })
 
 	// write map
 	k, d := s.key, s.depth
 
 	s.flush(d)
-
-	sort.Slice(sv, func(i, j int) bool { return sv[i].ks < sv[j].ks })
 
 	s.depth = d + 1
 	for i, kv := range sv {
@@ -183,10 +162,10 @@ func (s *Marshaller) encodeMap(v any) {
 			s.flush(s.depth)
 		}
 
-		s.key = k + "." + kv.ks
+		s.key = k + "." + kv.k
 
 		// key
-		s.write(s.Map.Key(s.key, kv.ks))
+		s.write(s.Map.Key(s.key, kv.k))
 		s.write(s.Map.Colon)
 
 		// value
