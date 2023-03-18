@@ -45,8 +45,7 @@ type MapMarshaller struct {
 // Marshal convert struct as JSON represented into HTML.
 // Passes JSON path to render specific JSON elements.
 // Inspired by encoding/json.
-// Warning: Should be used only for basic Go types: bool, float64, string, []any, map[string]any, nil.
-// Warning: does not handle pointers, does not handle custom struct.
+// Should be used only for types: bool, float64, string, []any, map[string]any, nil.
 // You can get allowed input easily with json.Unmarshal to any.
 func (s *Marshaller) Marshal(v any) []byte {
 	b := bytes.Buffer{}
@@ -99,11 +98,9 @@ func (s *Marshaller) encodeFloat64(v float64) {
 }
 
 func (s *Marshaller) encodeArray(v []any) {
-	n := len(v)
-
 	s.write(s.Array.OpenBracket)
 
-	if n == 0 {
+	if len(v) == 0 {
 		s.write(s.Array.CloseBracket)
 		return
 	}
@@ -113,7 +110,7 @@ func (s *Marshaller) encodeArray(v []any) {
 	s.flush(d)
 
 	s.depth = d + 1
-	for i := 0; i < n; i++ {
+	for i, q := range v {
 		if i > 0 {
 			s.write(s.Array.Comma)
 			s.flush(s.depth)
@@ -122,7 +119,7 @@ func (s *Marshaller) encodeArray(v []any) {
 		s.key = k + "[" + strconv.Itoa(i) + "]"
 
 		s.write("") // fake virtual key, to apply same offset logic as JSON Map
-		s.marshal(v[i])
+		s.marshal(q)
 	}
 
 	s.flush(s.depth)
