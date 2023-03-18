@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"errors"
 	"io"
-	"reflect"
 	"sort"
 	"strconv"
 	"strings"
@@ -69,59 +68,52 @@ func (s *Marshaller) MarshalTo(w io.Writer, v any) error {
 	return errors.Join(s.err...)
 }
 
-func (s *Marshaller) marshal(v any) { s.valueEncoder(v)(reflect.ValueOf(v)) }
+func (s *Marshaller) marshal(v any) { s.valueEncoder(v)(v) }
 
-type encoderFn func(v reflect.Value)
+type encoderFn func(v any)
 
 func (s *Marshaller) valueEncoder(v any) encoderFn {
 	if v == nil {
 		return s.encodeNull
 	}
 
-	r := reflect.ValueOf(v)
-	if !r.IsValid() {
-		return s.encodeUnsupported
-	}
-
-	switch r.Type().Kind() {
+	switch v.(type) {
 	// scalars
-	case reflect.Bool:
+	case bool:
 		return s.encodeBool
-	case reflect.String:
+	case string:
 		return s.encodeString
-	case reflect.Float64:
+	case float64:
 		return s.encodeFloat64
 
 	// containers
-	case reflect.Map:
+	case map[string]any:
 		return s.encodeMap
-	case reflect.Slice, reflect.Array:
+	case []any:
 		return s.encodeArray
 
-	// if we have struct, we did something wrong
-	case reflect.Struct:
-		return s.encodeUnsupported
 	default:
 		return s.encodeUnsupported
 	}
 }
 
-func (s *Marshaller) encodeUnsupported(v reflect.Value) {
-	s.err = append(s.err, errors.New("skip unsupported type at key("+s.key+") kind("+v.Kind().String()+")"))
+func (s *Marshaller) encodeUnsupported(v any) {
+	s.err = append(s.err, errors.New("skip unsupported type at key("+s.key+")"))
 }
 
-func (s *Marshaller) encodeNull(v reflect.Value) { s.write(s.Null(s.key)) }
+func (s *Marshaller) encodeNull(v any) { s.write(s.Null(s.key)) }
 
-func (s *Marshaller) encodeBool(v reflect.Value) { s.write(s.Bool(s.key, v.Bool())) }
+func (s *Marshaller) encodeBool(v any) { s.write(s.Bool(s.key, v.(bool))) }
 
-func (s *Marshaller) encodeString(v reflect.Value) { s.write(s.String(s.key, v.String())) }
+func (s *Marshaller) encodeString(v any) { s.write(s.String(s.key, v.(string))) }
 
-func (s *Marshaller) encodeFloat64(v reflect.Value) {
-	s.write(s.Number(s.key, v.Float(), strconv.FormatFloat(v.Float(), 'f', -1, 64)))
+func (s *Marshaller) encodeFloat64(v any) {
+	s.write(s.Number(s.key, v.(float64), strconv.FormatFloat(v.(float64), 'f', -1, 64)))
 }
 
-func (s *Marshaller) encodeArray(v reflect.Value) {
-	n := v.Len()
+func (s *Marshaller) encodeArray(v any) {
+	a := v.([]any)
+	n := len(a)
 
 	s.write(s.Array.OpenBracket)
 
@@ -144,7 +136,7 @@ func (s *Marshaller) encodeArray(v reflect.Value) {
 		s.key = k + "[" + strconv.Itoa(i) + "]"
 
 		s.write("") // fake virtual key, to apply same offset logic as JSON Map
-		s.marshal(v.Index(i).Interface())
+		s.marshal(a[i])
 	}
 
 	s.flush(s.depth)
@@ -153,27 +145,21 @@ func (s *Marshaller) encodeArray(v reflect.Value) {
 	s.key, s.depth = k, d
 }
 
-func (s *Marshaller) encodeMap(v reflect.Value) {
+func (s *Marshaller) encodeMap(v any) {
 	type mapKV struct {
-		rk reflect.Value
-		rv reflect.Value
 		ks string
 		v  any
 	}
 
+	m := v.(map[string]any)
+
 	// extract and sort the keys
-	sv := make([]mapKV, v.Len())
-	mi := v.MapRange()
-	for i := 0; mi.Next(); i++ {
-		sv[i].rk = mi.Key()
-		sv[i].rv = mi.Value()
-
-		// key is always string
-		if sv[i].rk.Kind() == reflect.String {
-			sv[i].ks = sv[i].rk.String()
-		}
-
-		sv[i].v = v.MapIndex(mi.Key()).Interface()
+	sv := make([]mapKV, 0, len(m))
+	for k, v := range m {
+		sv = append(sv, mapKV{
+			ks: k,
+			v:  v,
+		})
 	}
 
 	s.write(s.Map.OpenBracket)
