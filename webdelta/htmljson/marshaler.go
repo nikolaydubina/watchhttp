@@ -16,6 +16,8 @@ import (
 // JSON element renderers receive JSON path and value of element.
 // Should be used only for types: bool, float64, string, []any, map[string]any, nil.
 // You can get allowed input easily with json.Unmarshal to any.
+// Safe for repeated use.
+// Not safe for concurrent use.
 type Marshaler struct {
 	Null   func(key string) string
 	Bool   func(key string, v bool) string

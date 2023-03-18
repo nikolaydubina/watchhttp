@@ -27,6 +27,20 @@ func TestDefaultMarshaler(t *testing.T) {
 	}
 }
 
+func TestDefaultMarshaler_Repeated(t *testing.T) {
+	var v any
+	json.Unmarshal(exampleJSON, &v)
+
+	s := htmljson.DefaultMarshaler
+
+	for i := 0; i < 10; i++ {
+		h := s.Marshal(v)
+		if exampleHTML != string(h) {
+			t.Errorf("%d: wrong output: %s", i, string(h))
+		}
+	}
+}
+
 func TestMarshaler_JSONPath(t *testing.T) {
 	var v any
 	json.Unmarshal(exampleJSON, &v)
