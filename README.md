@@ -62,7 +62,7 @@ $ curl localhost:9000/
 watchhttp -t 2s -json -- /bin/sh -c "curl --location 'api.coincap.io/v2/rates/bitcoin' | jq"
 ```
 
-![](./img/example-btc-static.png)
+![](./doc/example-btc-static.png)
 
 ### Live graph of Kubernetes resources with `kubectl` and `graphviz`
 
@@ -74,7 +74,7 @@ go install github.com/nikolaydubina/jsonl-graph@latest
 watchhttp -t 3s -p 9000 -- /bin/sh -c "kubectl get pods -o json | jq '.items[] | {to: (.kind + \":\" + .metadata.name), from: (.metadata.ownerReferences[].kind + \":\" + .metadata.ownerReferences[].name)}' | jsonl-graph | dot -Tsvg"
 ```
 
-![](./img/example-k8s-graph.png)
+![](./doc/example-k8s-graph.png)
 
 ### Live status of Kubernetes resource with `kubectl`
 
@@ -82,7 +82,7 @@ watchhttp -t 3s -p 9000 -- /bin/sh -c "kubectl get pods -o json | jq '.items[] |
 watchhttp -t 3s -p 9000 -- kubectl describe deployment hello-minikube
 ```
 
-![](./img/example-k8s-describe-static.png)
+![](./doc/example-k8s-describe-static.png)
 
 ### Live system metrics with `vmstat`
 
