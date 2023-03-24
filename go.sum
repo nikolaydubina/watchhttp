@@ -1,4 +1,11 @@
 github.com/nikolaydubina/htmljson v1.1.0 h1:x46gPHNcR1XEFb9anZ4y5nwyJLWwilEQQYSwoUozI9k=
 github.com/nikolaydubina/htmljson v1.1.0/go.mod h1:7SfWPbHB2BLKb7O01BiVwjiFjHe9J8R3LMnYlh4/WzU=
+github.com/nikolaydubina/htmlyaml v1.0.0 h1:056ftyugRemq2nwr9ku/GfflGxYf+0jA0AgXUdhzzrQ=
+github.com/nikolaydubina/htmlyaml v1.0.0/go.mod h1:QR8/4dtrYdHK6EuJLKU1KOyjxsxd4yltrS3XEV6WOlo=
 golang.org/x/exp v0.0.0-20230315142452-642cacee5cc0 h1:pVgRXcIictcr+lBQIFeiwuwtDIs4eL21OuM9nyAADmo=
 golang.org/x/exp v0.0.0-20230315142452-642cacee5cc0/go.mod h1:CxIveKay+FTh1D0yPZemJVgC/95VzuuOLq5Qi4xnoYc=
+golang.org/x/exp v0.0.0-20230321023759-10a507213a29 h1:ooxPy7fPvB4kwsA2h+iBNHkAbp/4JxTSwCmvdjEYmug=
+golang.org/x/exp v0.0.0-20230321023759-10a507213a29/go.mod h1:CxIveKay+FTh1D0yPZemJVgC/95VzuuOLq5Qi4xnoYc=
+gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405/go.mod h1:Co6ibVJAznAaIkqp8huTwlJQCZ016jof/cbN4VW5Yz0=
+gopkg.in/yaml.v3 v3.0.1 h1:fxVm/GzAzEWqLHuvctI91KS9hhNmmWOoWu0XTYJS7CA=
+gopkg.in/yaml.v3 v3.0.1/go.mod h1:K4uyk7z7BCEPqu6E+C64Yfv1cQ7kz7rIZviUmN+EgEM=

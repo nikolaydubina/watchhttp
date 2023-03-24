@@ -23,35 +23,35 @@
   --text-red: rgb(250, 17, 79); 
 }
 
-/* json */
+/* yaml */
 
-.json-lang, .json-key, .json-value {
+.yaml-lang, .yaml-key, .yaml-value, .yaml-padding-space {
   display: inline;
   font-family: monospace;
 }
 
-.json-lang {
+.yaml-lang {
   color:var(--text-grey-l-2);
 }
 
-.json-key {
+.yaml-key {
   color:var(--text-grey-d-4);
 }
 
-.json-bool, .json-value  {
+.yaml-bool, .yaml-value  {
   color:var(--text-grey-d-1);
 }
 
-.json-null {
+.yaml-null {
   color:var(--text-grey-l-2);
 }
 
-.json-container-row {
+.yaml-container-row {
   display: block;
   width: 100%;
 }
 
-.json-container-padding {
+.yaml-container-padding {
   display: inline;
 }
 
@@ -83,9 +83,7 @@
 </head>
 <body>
 
-{{.HTMLJSON}}
+{{.HTMLYAML}}
 
 </body>
 </html>
-
-

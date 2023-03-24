@@ -48,6 +48,7 @@ func main() {
 		port            int           = 9000
 		interval        time.Duration = time.Second
 		contentTypeJSON bool          = false
+		contentTypeYAML bool          = false
 		isDelta         bool          = false
 	)
 
@@ -55,12 +56,16 @@ func main() {
 		flag.IntVar(&port, "p", port, "port")
 		flag.DurationVar(&interval, "t", interval, `interval to execute command (units: ns, us, µs, ms, s, m, h, d, w, y)`)
 		flag.BoolVar(&contentTypeJSON, "json", contentTypeJSON, "set Content-Type: application/json")
+		flag.BoolVar(&contentTypeYAML, "yaml", contentTypeYAML, "set Content-Type: application/yaml")
 		flag.BoolVar(&isDelta, "d", isDelta, "show animated HTML delta difference (only JSON)")
 		flag.Parse()
 	}
 
 	if len(cmdargs) == 0 {
 		log.Fatal("missing command")
+	}
+	if contentTypeJSON && contentTypeYAML {
+		log.Fatal("either json or yaml can be set as true")
 	}
 
 	log.Printf("serving at port=%d with interval=%v latest STDOUT of command: %v\n", port, interval, strings.Join(cmdargs, " "))
@@ -78,10 +83,20 @@ func main() {
 		interval: interval,
 	}
 
-	if isDelta && contentTypeJSON {
-		h.provider = &JSONHTMLRenderBridge{
+	if isDelta {
+		var r interface {
+			FromTo(r io.Reader, w io.Writer) (written int64, err error)
+		}
+		title := html.EscapeString(strings.Join(cmdargs, " "))
+		switch {
+		case contentTypeJSON:
+			r = htmldelta.NewJSONRenderer(title)
+		case contentTypeYAML:
+			r = htmldelta.NewYAMLRenderer(title)
+		}
+		h.provider = &RenderBridge{
 			provider: cmdrunner,
-			renderer: htmldelta.NewJSONRenderer(html.EscapeString(strings.Join(cmdargs, " "))),
+			renderer: r,
 			b:        &bytes.Buffer{},
 			mtx:      &sync.Mutex{},
 		}
@@ -90,6 +105,8 @@ func main() {
 		h.contentType = "text/html; charset=utf-8"
 	} else if contentTypeJSON {
 		h.contentType = "application/json"
+	} else if contentTypeYAML {
+		h.contentType = "application/yaml"
 	}
 
 	http.HandleFunc("/", h.handleRequest)
@@ -117,29 +134,31 @@ func (s ForwardHandler) handleRequest(w http.ResponseWriter, req *http.Request) 
 	}
 }
 
-// JSONHTMLRenderBridge passes data from raw JSON provider to HTML JSON delta renderer and write output to destination.
-// It caches rendered delta HTML JSON because delta HTML JSON renderer is not idempotent.
-type JSONHTMLRenderBridge struct {
-	renderer *htmldelta.JSONRenderer
+// RenderBridge passes data from raw YAML/JSON provider to HTML YAML/JSON delta renderer and write output to destination.
+// It caches rendered delta HTML YAML/JSON because delta HTML YAML/JSON renderer is not idempotent.
+type RenderBridge struct {
+	renderer interface {
+		FromTo(r io.Reader, w io.Writer) (written int64, err error)
+	}
 	provider *CmdRunner
 	b        *bytes.Buffer
 	ts       time.Time
 	mtx      *sync.Mutex
 }
 
-func (s *JSONHTMLRenderBridge) WriteTo(w io.Writer) (written int64, err error) {
+func (s *RenderBridge) WriteTo(w io.Writer) (written int64, err error) {
 	s.mtx.Lock()
 	defer s.mtx.Unlock()
 	if ts := s.provider.LastUpdatedAt(); ts.After(s.ts) {
 		s.ts = ts
 		s.b.Reset()
-		s.renderer.From(bytes.NewReader(s.provider.LastStdout())).WriteTo(s.b)
+		s.renderer.FromTo(bytes.NewReader(s.provider.LastStdout()), s.b)
 	}
 	// to not drain buffer accessing its bytes
 	return io.Copy(w, bytes.NewReader(s.b.Bytes()))
 }
 
-func (s *JSONHTMLRenderBridge) LastUpdatedAt() time.Time { return s.ts }
+func (s *RenderBridge) LastUpdatedAt() time.Time { return s.ts }
 
 // CmdRunner runs command on interval and stores last STDOUT in buffer
 type CmdRunner struct {
