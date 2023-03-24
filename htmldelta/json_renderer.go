@@ -15,7 +15,6 @@ var jsonTemplateHTML []byte
 // Not idempotent.
 // Not safe for concurrent use.
 type JSONRenderer struct {
-	r   io.Reader
 	m   *htmljson.PageMarshaler
 	num map[string]float64
 }
@@ -60,14 +59,9 @@ func (s *JSONRenderer) numberfunc(k string, v float64, sv string) string {
 	return `<div class="json-value json-number ` + class + `">` + sv + `</div>`
 }
 
-func (s *JSONRenderer) From(r io.Reader) *JSONRenderer {
-	s.r = r
-	return s
-}
-
-func (s *JSONRenderer) WriteTo(w io.Writer) (written int64, err error) {
+func (s *JSONRenderer) FromTo(r io.Reader, w io.Writer) (written int64, err error) {
 	var v any
-	if err := json.NewDecoder(s.r).Decode(&v); err != nil && err != io.EOF {
+	if err := json.NewDecoder(r).Decode(&v); err != nil && err != io.EOF {
 		return 0, err
 	}
 	s.m.MarshalTo(w, v)

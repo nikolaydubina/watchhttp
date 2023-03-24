@@ -19,13 +19,20 @@
 go install github.com/nikolaydubina/watchhttp@latest
 ```
 
-### Live animated delta of JSON from transformed cURL
+### Live animated delta of from transformed cURL
 
+JSON
 ```bash
 watchhttp -t 5s -json -d -- /bin/sh -c 'curl "https://api.open-meteo.com/v1/forecast?latitude=52.52&longitude=13.41&current_weather=true&hourly=temperature_2m,relativehumidity_2m,windspeed_10m" | jq "del(.hourly)"'
 ```
 
 https://user-images.githubusercontent.com/2933061/226150800-d591624e-dc2d-482f-8b1f-c2295699fac7.mov
+
+
+YAML
+```bash
+watchhttp -t 5s -yaml -d -- /bin/sh -c 'curl "https://api.open-meteo.com/v1/forecast?latitude=52.52&longitude=13.41&current_weather=true&hourly=temperature_2m,relativehumidity_2m,windspeed_10m" | jq "del(.hourly)" | yq -P'
+```
 
 ### Fetch and transform periodically with `curl` and `jq`
 
