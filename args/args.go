@@ -1,8 +1,6 @@
 package args
 
-const (
-	terminator = "--"
-)
+const terminator = "--"
 
 // GetCommandFromArgs returns command from command args.
 // command is determined as a whole string after terminator (`--`) if terminator present.

@@ -59,11 +59,10 @@ func (s *JSONRenderer) numberfunc(k string, v float64, sv string) string {
 	return `<div class="json-value json-number ` + class + `">` + sv + `</div>`
 }
 
-func (s *JSONRenderer) FromTo(r io.Reader, w io.Writer) (written int64, err error) {
+func (s *JSONRenderer) FromTo(r io.Reader, w io.Writer) error {
 	var v any
 	if err := json.NewDecoder(r).Decode(&v); err != nil && err != io.EOF {
-		return 0, err
+		return err
 	}
-	s.m.MarshalTo(w, v)
-	return 0, err
+	return s.m.MarshalTo(w, v)
 }

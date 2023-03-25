@@ -3,8 +3,8 @@ package main
 import (
 	"bytes"
 	_ "embed"
+	"errors"
 	"flag"
-	"fmt"
 	"html"
 	"io"
 	"log"
@@ -20,7 +20,7 @@ import (
 	"github.com/nikolaydubina/watchhttp/htmldelta"
 )
 
-const doc string = `
+const doc = `
 Run command periodically and expose latest STDOUT as HTTP endpoint
 
 Examples:
@@ -38,7 +38,7 @@ Command options:
 
 func main() {
 	flag.Usage = func() {
-		fmt.Fprint(flag.CommandLine.Output(), doc)
+		flag.CommandLine.Output().Write([]byte(doc))
 		flag.PrintDefaults()
 	}
 
@@ -70,22 +70,22 @@ func main() {
 
 	log.Printf("serving at port=%d with interval=%v latest STDOUT of command: %v\n", port, interval, strings.Join(cmdargs, " "))
 
-	cmdrunner := &CmdRunner{
+	commandRunner := &CommandRunner{
 		ticker:     time.NewTicker(interval),
 		lastStdout: bytes.NewBuffer(nil),
 		mtx:        &sync.RWMutex{},
 		cmd:        cmdargs,
 	}
-	go cmdrunner.Run()
+	go commandRunner.Run()
 
 	h := ForwardHandler{
-		provider: cmdrunner,
+		provider: commandRunner,
 		interval: interval,
 	}
 
 	if isDelta {
 		var r interface {
-			FromTo(r io.Reader, w io.Writer) (written int64, err error)
+			FromTo(r io.Reader, w io.Writer) error
 		}
 		title := html.EscapeString(strings.Join(cmdargs, " "))
 		switch {
@@ -95,18 +95,21 @@ func main() {
 			r = htmldelta.NewYAMLRenderer(title)
 		}
 		h.provider = &RenderBridge{
-			provider: cmdrunner,
+			provider: commandRunner,
 			renderer: r,
-			b:        &bytes.Buffer{},
-			mtx:      &sync.Mutex{},
+			raw:      bytes.NewBuffer(nil),
+			out:      bytes.NewBuffer(nil),
+			mtx:      &sync.RWMutex{},
 		}
 	}
-	if isDelta {
+
+	switch {
+	case isDelta:
 		h.contentType = "text/html; charset=utf-8"
-	} else if contentTypeJSON {
+	case contentTypeJSON:
 		h.contentType = "application/json"
-	} else if contentTypeYAML {
-		h.contentType = "application/yaml"
+	case contentTypeYAML:
+		h.contentType = "text/yaml"
 	}
 
 	http.HandleFunc("/", h.handleRequest)
@@ -128,40 +131,68 @@ func (s ForwardHandler) handleRequest(w http.ResponseWriter, req *http.Request) 
 		w.Header().Set("Content-Type", s.contentType)
 	}
 	w.Header().Set("Last-Modified", s.provider.LastUpdatedAt().UTC().Format(http.TimeFormat))
-	w.Header().Set("Refresh", fmt.Sprintf("%.0f", s.interval.Seconds()))
+	w.Header().Set("Refresh", strconv.Itoa(int(s.interval.Seconds())))
 	if _, err := s.provider.WriteTo(w); err != nil {
 		log.Printf("error: %s", err)
 	}
 }
 
-// RenderBridge passes data from raw YAML/JSON provider to HTML YAML/JSON delta renderer and write output to destination.
-// It caches rendered delta HTML YAML/JSON because delta HTML YAML/JSON renderer is not idempotent.
+// RenderBridge passes data from raw provider to renderer.
+// Caches renderer output, in case renderer is not idempotent.
 type RenderBridge struct {
 	renderer interface {
-		FromTo(r io.Reader, w io.Writer) (written int64, err error)
+		FromTo(r io.Reader, w io.Writer) error
 	}
-	provider *CmdRunner
-	b        *bytes.Buffer
-	ts       time.Time
-	mtx      *sync.Mutex
+	provider interface {
+		LastUpdatedAt() time.Time
+		WriteTo(w io.Writer) (written int64, err error)
+	}
+	raw *bytes.Buffer
+	out *bytes.Buffer
+	ts  time.Time
+	mtx *sync.RWMutex
+}
+
+func (s *RenderBridge) refresh() error {
+	s.mtx.Lock()
+	defer s.mtx.Unlock()
+
+	s.ts = s.provider.LastUpdatedAt()
+
+	// copy data, in case provider will modify data
+	s.raw.Reset()
+	if _, err := s.provider.WriteTo(s.raw); err != nil {
+		return err
+	}
+	s.out.Reset()
+	if err := s.renderer.FromTo(s.raw, s.out); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (s *RenderBridge) WriteTo(w io.Writer) (written int64, err error) {
-	s.mtx.Lock()
-	defer s.mtx.Unlock()
-	if ts := s.provider.LastUpdatedAt(); ts.After(s.ts) {
-		s.ts = ts
-		s.b.Reset()
-		s.renderer.FromTo(bytes.NewReader(s.provider.LastStdout()), s.b)
+	if s.LastUpdatedAt().Before(s.provider.LastUpdatedAt()) {
+		if err := s.refresh(); err != nil {
+			return 0, err
+		}
 	}
-	// to not drain buffer accessing its bytes
-	return io.Copy(w, bytes.NewReader(s.b.Bytes()))
+
+	s.mtx.RLock()
+	defer s.mtx.RUnlock()
+	n, err := w.Write(s.out.Bytes())
+	return int64(n), err
 }
 
-func (s *RenderBridge) LastUpdatedAt() time.Time { return s.ts }
+func (s *RenderBridge) LastUpdatedAt() time.Time {
+	s.mtx.RLock()
+	defer s.mtx.RUnlock()
+	return s.ts
+}
 
-// CmdRunner runs command on interval and stores last STDOUT in buffer
-type CmdRunner struct {
+// CommandRunner on interval and store last STDOUT
+type CommandRunner struct {
 	ticker     *time.Ticker
 	cmd        []string
 	lastStdout *bytes.Buffer
@@ -169,22 +200,20 @@ type CmdRunner struct {
 	mtx        *sync.RWMutex
 }
 
-func (s *CmdRunner) LastUpdatedAt() time.Time { return s.ts }
-
-func (s *CmdRunner) LastStdout() []byte {
+func (s *CommandRunner) LastUpdatedAt() time.Time {
 	s.mtx.RLock()
 	defer s.mtx.RUnlock()
-	return s.lastStdout.Bytes()
+	return s.ts
 }
 
-func (s *CmdRunner) WriteTo(w io.Writer) (written int64, err error) {
+func (s *CommandRunner) WriteTo(w io.Writer) (written int64, err error) {
 	s.mtx.RLock()
 	defer s.mtx.RUnlock()
-	// to not drain buffer accessing its bytes
-	return io.Copy(w, bytes.NewReader(s.lastStdout.Bytes()))
+	n, err := w.Write(s.lastStdout.Bytes())
+	return int64(n), err
 }
 
-func (s *CmdRunner) Run() {
+func (s *CommandRunner) Run() {
 	for range s.ticker.C {
 		cmd := exec.Command(s.cmd[0], s.cmd[1:]...)
 
@@ -199,10 +228,9 @@ func (s *CmdRunner) Run() {
 
 		s.mtx.Lock()
 
-		s.lastStdout.Reset()
-
 		s.ts = time.Now()
-		if _, err := io.Copy(s.lastStdout, stdout); err != nil {
+		s.lastStdout.Reset()
+		if _, err := s.lastStdout.ReadFrom(stdout); err != nil && !errors.Is(err, io.EOF) {
 			log.Fatal(err)
 		}
 
