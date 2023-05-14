@@ -57,7 +57,7 @@ func main() {
 		flag.DurationVar(&interval, "t", interval, `interval to execute command (units: ns, us, µs, ms, s, m, h, d, w, y)`)
 		flag.BoolVar(&contentTypeJSON, "json", contentTypeJSON, "set Content-Type: application/json")
 		flag.BoolVar(&contentTypeYAML, "yaml", contentTypeYAML, "set Content-Type: application/yaml")
-		flag.BoolVar(&isDelta, "d", isDelta, "show animated HTML delta difference (only JSON)")
+		flag.BoolVar(&isDelta, "d", isDelta, "show animated HTML delta difference")
 		flag.Parse()
 	}
 
