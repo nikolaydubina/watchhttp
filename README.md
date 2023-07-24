@@ -213,5 +213,6 @@ Overall, this is separate problem of exposing terminal throuhg browser.
 ### Appenidx E: Inspiration and Other Tools
 
 Charles Schwab quick stock buy liver ticker
+
 <img width="341" alt="Screenshot 2023-07-24 at 21 34 09" src="https://github.com/nikolaydubina/watchhttp/assets/2933061/e7641155-fc5b-469d-8b2b-48e36e579988">
 
