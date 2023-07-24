@@ -207,8 +207,7 @@ Overall, this is separate problem of exposing terminal throuhg browser.
 * https://docs.coincap.io/#intro
 * `curl --location 'api.coincap.io/v2/rates/bitcoin'`
 * no auth
-* no limit
-* 
+* no limit 
 
 ### Appenidx E: Inspiration and Other Tools
 
