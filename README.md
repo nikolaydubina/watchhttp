@@ -4,6 +4,7 @@
 [![codecov](https://codecov.io/gh/nikolaydubina/watchhttp/branch/master/graph/badge.svg?token=PMs70WQIVI)](https://codecov.io/gh/nikolaydubina/watchhttp)
 [![Go Reference](https://pkg.go.dev/badge/github.com/nikolaydubina/watchhttp.svg)](https://pkg.go.dev/github.com/nikolaydubina/watchhttp)
 [![Mentioned in Awesome Go](https://awesome.re/mentioned-badge.svg)](https://github.com/avelino/awesome-go)
+[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/nikolaydubina/watchhttp/badge)](https://securityscorecards.dev/viewer/?uri=github.com/nikolaydubina/watchhttp)
 
 > Run command periodically and expose latest STDOUT as HTTP endpoint
 
