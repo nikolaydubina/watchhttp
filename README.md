@@ -1,7 +1,7 @@
 # 🌺 watchhttp
 
 <p align="center">
-  ✨ Sponsored by <a href="https://apps.apple.com/app/id6738306589">NDX AI Shopping Assistant</a>
+  ✨ Sponsored by <a href="https://ndx.one/?ct=github">NDX Technologies</a>
 </p>
 
 [![Go Report Card](https://goreportcard.com/badge/github.com/nikolaydubina/watchhttp)](https://goreportcard.com/report/github.com/nikolaydubina/watchhttp)
