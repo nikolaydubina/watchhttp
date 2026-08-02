@@ -1,9 +1,5 @@
 # 🌺 watchhttp
 
-<p align="center">
-  ✨ Sponsored by <a href="https://ndx.one/?ct=github">NDX Technologies</a>
-</p>
-
 [![Go Report Card](https://goreportcard.com/badge/github.com/nikolaydubina/watchhttp)](https://goreportcard.com/report/github.com/nikolaydubina/watchhttp)
 [![codecov](https://codecov.io/gh/nikolaydubina/watchhttp/branch/master/graph/badge.svg?token=PMs70WQIVI)](https://codecov.io/gh/nikolaydubina/watchhttp)
 [![Go Reference](https://pkg.go.dev/badge/github.com/nikolaydubina/watchhttp.svg)](https://pkg.go.dev/github.com/nikolaydubina/watchhttp)
